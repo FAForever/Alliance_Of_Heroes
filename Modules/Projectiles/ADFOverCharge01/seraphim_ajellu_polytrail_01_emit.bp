@@ -1,0 +1,13 @@
+TrailEmitterBlueprint {
+	BlueprintId = 'seraphim_ajellu_polytrail_01',
+	Lifetime = -1.00,
+    TrailLength = 1.5,
+    Size = 0.04,
+    SortOrder = -102,
+    BlendMode = 0,
+    TextureRepeatRate = .5,
+    LODCutoff = 160,
+	RepeatTexture = [[/Mods/Alliance_Of_Heroes/Modules/Projectiles/ADFOverCharge01/trail_red_02.dds]],
+	RampTexture = [[/Mods/Alliance_Of_Heroes/Modules/Projectiles/ADFOverCharge01/ramp_trail_10_Red.dds]],
+}
+

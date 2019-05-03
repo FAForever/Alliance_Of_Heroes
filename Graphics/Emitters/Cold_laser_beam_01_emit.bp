@@ -1,0 +1,13 @@
+BeamBlueprint {
+    Lifetime = 10,
+    TextureName = '/mods/Alliance_Of_Heroes/Graphics/Textures/beam_blue_01.dds',
+    Thickness = 0.4,
+    StartColor = {x=0.1,y=0.4,z=1,w=0.9}, # R,G,B,A
+    EndColor = {x=0.1,y=0.5,z=1,w=0.9}, # R,G,B,A
+    Blendmode = 3.0,
+    RepeatRate = 0.01,
+    Length = 2000,
+    UShift = 0.0,
+    VShift = -0.25,
+    LODCutoff = 400,
+}
