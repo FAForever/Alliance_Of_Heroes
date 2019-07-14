@@ -27,7 +27,7 @@ function Description(unit) -- Mandatory function
 	local Health = Power * 40 * (1 + Int/100 + Restoration/100) 
 	local HealthMin = math.floor(Health * 0.75)
 	local HealthMax = math.floor(Health * 1.25)
-	local Tp = {} Tp.Line = {} Tp.Width = 280 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 230 Tp.OffSetY = -70
 	local Techlevel = CF.GetUnitTech(unit)
 	table.insert(Tp.Line, {'Repair Structures'})
 	table.insert(Tp.Line, {'Repair all self & allies structures up to tech '..Techlevel, Color.WHITE})

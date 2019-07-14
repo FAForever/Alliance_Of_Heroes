@@ -26,7 +26,7 @@ function Description(unit) -- Mandatory function
 	local Power = math.floor(50 * PowerModifier * (1 + Rangercraft/100 + Int/100))
 	local Defense = Power
 	local Armor = math.ceil(Power / 8)
-	local Tp = {} Tp.Line = {} Tp.Width = 220 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 190 Tp.OffSetY = -70
 	table.insert(Tp.Line, {'Turn Steel'})
 	table.insert(Tp.Line, {'Personal defense and armor buff', Color.WHITE})
 	table.insert(Tp.Line, {'+ '..Defense..' defense', Color.AEON})

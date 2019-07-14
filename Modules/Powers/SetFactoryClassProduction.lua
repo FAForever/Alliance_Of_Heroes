@@ -17,7 +17,7 @@ end
 function Description(unit) -- Mandatory function
 	local id = unit:GetEntityId()
 	local Active_Production = DM.GetProperty(id,'Active_Production')
-	local Tp = {} Tp.Line = {} Tp.Width = 210 Tp.OffSetY = -25
+	local Tp = {} Tp.Line = {} Tp.Width = 210 Tp.OffSetY = -70
 	local APColor = Color.GREY_LIGHT
 	local BaseClasses = {'Fighter', 'Rogue', 'Support', 'Ardent'}
 	table.insert(Tp.Line, {Name(unit)})

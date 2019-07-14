@@ -19,7 +19,7 @@ end
 function Description(unit) -- Mandatory function
 	local id = unit:GetEntityId()
 	local bp = unit:GetBlueprint()
-	local Tp = {} Tp.Line = {} Tp.Width = 280 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 230 Tp.OffSetY = -70
 	local Int =  DM.GetProperty(id, 'Intelligence')
 	local Bardsong = 0
 	if DM.GetProperty(id, 'Bardsong', 0) then Bardsong = CF.GetSkillCurrent(id, 'Bardsong') end

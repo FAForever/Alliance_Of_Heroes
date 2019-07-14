@@ -281,12 +281,16 @@ function UpdateWindow(info)
                     shield = unitBp.Enhancements[getEnh.GetEnhancements(info.entityId).Back]
                 end
                 local shieldMaxHealth, shieldRegenRate = shield.ShieldMaxHealth or 0, shield.ShieldRegenRate or 0
-				local Tech_ShieldPower = DM.GetProperty(info.entityId, 'Tech_ShieldPower', 0)
 				local Power_Shield_MaxHealth = DM.GetProperty(info.entityId, 'Power_Shield_MaxHealth', 0)
 				local Power_Shield_RegenRate = DM.GetProperty(info.entityId, 'Power_Shield_RegenRate', 0)
-				shieldMaxHealth = (shieldMaxHealth * (1 + Tech_ShieldPower))
 				if Power_Shield_MaxHealth > 0 then shieldMaxHealth = shieldMaxHealth + Power_Shield_MaxHealth end
 				if Power_Shield_RegenRate > 0 then shieldRegenRate = shieldRegenRate + Power_Shield_RegenRate end
+				if DM.GetProperty(info.entityId,'PrestigeClassPromoted') != 1 then
+					local Tech_Shield_MaxHealth = DM.GetProperty(info.entityId, 'Tech_Shield_MaxHealth', 0)
+					local Tech_Shield_RegenRate = DM.GetProperty(info.entityId, 'Tech_Shield_RegenRate', 0)
+					if Tech_Shield_MaxHealth > 0 then shieldMaxHealth = shieldMaxHealth + Tech_Shield_MaxHealth end
+					if Tech_Shield_RegenRate > 0 then shieldRegenRate = shieldRegenRate + Tech_Shield_RegenRate end
+				end
                 if shieldMaxHealth > 0 then
                     local shieldHealth = math.floor(shieldMaxHealth*info.shieldRatio)
                     local shieldText = string.format("%d / %d", shieldHealth, shieldMaxHealth)

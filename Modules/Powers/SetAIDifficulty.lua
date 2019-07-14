@@ -15,7 +15,7 @@ function IsAvailable(unit) -- Mandatory function
 end
 
 function Description(unit) -- Mandatory function
-	local Tp = {} Tp.Line = {} Tp.Width = 270 Tp.OffSetY = -25
+	local Tp = {} Tp.Line = {} Tp.Width = 270 Tp.OffSetY = -70
 	local APColor = Color.GREY_LIGHT
 	local Difficulty = DM.GetProperty('Global', 'AI_Difficulty', 'Low Trained Imperial Troops')
 	local DifficultyLevel = {'Elite Imperial Troops', 'Well Trained Imperial Troops', 'Trained Imperial Troops', 'Low Trained Imperial Troops', 'No Imperial Troops'}

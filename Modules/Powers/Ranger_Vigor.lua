@@ -21,7 +21,7 @@ end
 
 function Description(unit) -- Mandatory function
 	local id = unit:GetEntityId()
-	local Tp = {} Tp.Line = {} Tp.Width = 250 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 205 Tp.OffSetY = -70
 	local BaseClass = DM.GetProperty(id,'BaseClass','Fighter')
 	local PrestigeClass = DM.GetProperty(id,'PrestigeClass','Ranger')
 	local Dex = DM.GetProperty(id, 'Dexterity')

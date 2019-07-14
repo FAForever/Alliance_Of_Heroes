@@ -61,8 +61,7 @@ Weapon = Class(OldWeapon) {
 				CurrentWeaponIndex = WeaponIndexList[i]
 			end
 		end
-		local DamageTech = 0
-		local DamageUpgradeMod = 0
+			local DamageUpgradeMod = 0
 		damageTable.DamageSpecialization = {}
 		damageTable.InstigatorId = id
 		damageTable.DamageRadius = (weaponBlueprint.DamageRadius or 0)
@@ -71,7 +70,6 @@ Weapon = Class(OldWeapon) {
 			if DM.GetProperty(id, 'Upgrade_Weapon_'..CurrentWeaponIndex..'_Damage to All Units') then
 				DamageUpgradeMod = ((DM.GetProperty(id, 'Upgrade_Weapon_'..CurrentWeaponIndex..'_Damage to All Units')) / 100)
 			end
-			DamageTech = DM.GetProperty(id, 'Tech_Ammunitions', 0) + DM.GetProperty(id, 'Tech_Ammunitions High Velocity', 0)
 			local DamageSpelist = {'Damage to Experimentals', 'Damage to SubCommanders', 'Damage to High Aircrafts', 'Damage to Ground Aircrafts', 'Damage to Defenses', 'Damage to Navals', 'Damage to Bots', 'Damage to Tanks', 'Damage to Structures'}
 			for _,DamageSpe in DamageSpelist do
 				damageTable.DamageSpecialization[DamageSpe] =  DM.GetProperty(id, 'Upgrade_Weapon_'..CurrentWeaponIndex..'_'..DamageSpe, 0) + (DM.GetProperty(id, 'Tech_'..DamageSpe, 0) * 100)
@@ -82,21 +80,24 @@ Weapon = Class(OldWeapon) {
 			else
 				damageTable.ExecuteWeaponBuff = nil			
 			end
-			damageTable.ArmorPiercing = (DM.GetProperty(id, 'Upgrade_Weapon_'..CurrentWeaponIndex..'_Armor Piercing') or 0) + DM.GetProperty(id, 'Tech_'..'Armor Piercing', 0) 
+			damageTable.ArmorPiercing = (DM.GetProperty(id, 'Upgrade_Weapon_'..CurrentWeaponIndex..'_Armor Piercing') or 0) + DM.GetProperty(id, 'Tech_AP', 0)
 			local distfromtarget = DM.GetProperty(id, 'DistanceFromTarget'..'_Weapon_'..CurrentWeaponIndex) or 'No Target'
 			local AttackRatingUpgrade = DM.GetProperty(id, 'Upgrade_Weapon_'..CurrentWeaponIndex..'_Attack Rating') or 0
+			local ATR_Tech = DM.GetProperty(id, 'Tech_Accuracy', 0)
 			if distfromtarget != 'No Target' then
 				local DamageRadius =  damageTable.DamageRadius
-				damageTable.AttackRating  = (CF.GetAttackRating(self.unit) + AttackRatingUpgrade) * math.pow(0.75, distfromtarget / 10) * (DamageRadius * 2 + 1) * (1 + ((self.DamageMod or 0) + weaponBlueprint.Damage)/4000)
+				damageTable.AttackRating  = (CF.GetAttackRating(self.unit) + AttackRatingUpgrade + ATR_Tech) * math.pow(0.75, distfromtarget / 10) * (DamageRadius * 2 + 1) * (1 + ((self.DamageMod or 0) + weaponBlueprint.Damage)/4000)
 			else
 				damageTable.AttackRating = CF.GetAttackRating(self.unit) + AttackRatingUpgrade
 			end
 		else
-			damageTable.AttackRating = CF.GetAttackRating(self.unit)
+			local ATR_Tech = DM.GetProperty(id, 'Tech_Accuracy', 0)
+			damageTable.AttackRating = CF.GetAttackRating(self.unit) + ATR_Tech
 		end	
 		local DamageAdd,_ = AoHBuff.GetBuffValue(self.unit, 'Damage', 'ALL') / 100
 		-- local DamageHallofFameBonus = CF.Calculate_HallofFameBonus(DM.GetProperty(damageTable.Army, 'AI_'..'Fighter'..'_'..CF.GetUnitLayerTypeHero(self.unit)), 'Fighter', 0) / 100
-		damageTable.DamageAmount = ((self.DamageMod or 0) + weaponBlueprint.Damage) * (1 + CF.GetDamageRating(self.unit) + DamageUpgradeMod + DamageClassMod + DamageAdd + DamageTech)
+		local Tech_Dam = DM.GetProperty(id, 'Tech_Damage', 0) / 100
+		damageTable.DamageAmount = ((self.DamageMod or 0) + weaponBlueprint.Damage) * (1 + CF.GetDamageRating(self.unit) + DamageUpgradeMod + DamageClassMod + DamageAdd + Tech_Dam)
 		damageTable.WeaponIndex = CurrentWeaponIndex
 		damageTable.Label = weaponBlueprint.Label
 		damageTable.WeaponCategory = weaponBlueprint.WeaponCategory

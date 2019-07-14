@@ -29,7 +29,7 @@ function Description(unit) -- Mandatory function
 	local MouvementRateBonus = math.min(math.ceil(Power), 33)
 	local Specialization = ''
 	local SpecializationBonus = math.ceil(MouvementRateBonus * 1.5)
-	local Tp = {} Tp.Line = {} Tp.Width = 300 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 240 Tp.OffSetY = -70
 	table.insert(Tp.Line, {'Ballad of the Wind'})
 	table.insert(Tp.Line, {'AOE (20) Movement Rate Buff Melody Chant' , Color.WHITE})
 	table.insert(Tp.Line, {'..Personal :', Color.GREY_LIGHT})

@@ -25,7 +25,7 @@ end
 function Description(unit) -- Mandatory function
 	local id = unit:GetEntityId()
 	local bp = unit:GetBlueprint()
-	local Tp = {} Tp.Line = {} Tp.Width = 300 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 240 Tp.OffSetY = -70
 	local BaseClass = DM.GetProperty(id,'BaseClass','Fighter')
 	local PrestigeClass = DM.GetProperty(id,'PrestigeClass','Dreadnought')
 	local RankLevel = ((BCMod[BaseClass] or 0.25) +( PCMod[PrestigeClass] or 0.25)) / 2

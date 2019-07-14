@@ -34,7 +34,7 @@ function Description(unit) -- Mandatory function
 	local ExpDuration = math.ceil(8 * RankLevel)
 	local BuffDuration = math.ceil(10 * RankLevel + 2)
 	local Techlevel = CF.GetUnitTech(unit)
-	local Tp = {} Tp.Line = {} Tp.Width = 285 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 230 Tp.OffSetY = -70
 	table.insert(Tp.Line, {'Helm Ringer'})
 	table.insert(Tp.Line, {'Rank : '..CF.GetRankName(RankLevel), Color.GREY_LIGHT})
 	table.insert(Tp.Line, {'Personal Damage Buff', Color.WHITE})

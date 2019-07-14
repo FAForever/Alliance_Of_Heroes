@@ -18,7 +18,7 @@ end
 
 function Description(unit) -- Mandatory function
 	local id = unit:GetEntityId()
-	local Tp = {} Tp.Line = {} Tp.Width = 205 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 165 Tp.OffSetY = -70
 	table.insert(Tp.Line, {'Fast Moving'})
 	table.insert(Tp.Line, {'Personal Moving Speed buff', Color.WHITE})
 	table.insert(Tp.Line, {'+ 50 % Moving, Acc. & Turn rate', Color.AEON})

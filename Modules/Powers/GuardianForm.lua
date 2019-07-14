@@ -36,7 +36,7 @@ function Description(unit) -- Mandatory function
 	local Specialization = ''
 	local SpecializationBonus = math.ceil(100 / TechLevel)
 	
-	local Tp = {} Tp.Line = {} Tp.Width = 370 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 320 Tp.OffSetY = -70
 	table.insert(Tp.Line, {'Guardian Form'})
 	table.insert(Tp.Line, {'Personal Guardian form transformation', Color.WHITE})
 	table.insert(Tp.Line, {'Personal Regeneration bonus : '..'+ '..RegenerationBonus, Color.AEON})

@@ -28,7 +28,7 @@ function Description(unit) -- Mandatory function
 	local DamageBonus = math.min(math.ceil(Power), 60)
 	local Specialization = ''
 	local SpecializationBonus = math.ceil(DamageBonus * 1.5)
-	local Tp = {} Tp.Line = {} Tp.Width = 300 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 240 Tp.OffSetY = -70
 	table.insert(Tp.Line, {'Battle Song'})
 	table.insert(Tp.Line, {'AOE (20) Damage & Power Damage Buff Chant' , Color.WHITE})
 	table.insert(Tp.Line, {'..Personal :', Color.GREY_LIGHT})

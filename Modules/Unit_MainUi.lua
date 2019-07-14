@@ -62,6 +62,7 @@ local LockTimer = false
 local LastTooltipTarget = ''
 local EnhTtipTimer = 2
 local AIDifficultyChange = 0
+-- local IsinResearchCenter = false
 
 function CreatePropertyText(UI, PropertyName, TextIndex, TextPosX, TextPosY, Refresh)
 	local StaticText = UIUtil.CreateText(UI, '', 11, UIUtil.bodyFont)
@@ -180,39 +181,41 @@ function CreateClickBox(UI, BoxNumber, BoxPath, BoxPathMouseEnter, xFromParent, 
 			if unit then
 				for _,eachunit in unit do
 					table.insert(_Allids, eachunit:GetEntityId())		
-				end
-				local bp = unit[1]:GetBlueprint()
-				local _id = unit[1]:GetEntityId()
-				local UnitLevel, UnitLevelP =  CF.GetUnitLevel(unit[1])
-				local PromoteList = CF.GetAvailablePromoteList(_id)
-				local PromoteClass = PromoteList[BoxNumber]
-				local BaseClasses = {'Fighter', 'Rogue', 'Support', 'Ardent'}
-				local PrestigeClasses = {'Guardian', 'Dreadnought', 'Ranger', 'Bard', 'Restorer'}
-				local BClass = ''
-				local PClass = ''
-				for _, class in BaseClasses do
-					if string.find(PromoteClass, class) then
-						BClass = class
+					local bp = eachunit:GetBlueprint()
+					local _id = eachunit:GetEntityId()
+					if DM.GetProperty(_id,'PrestigeClass') == 'NeedPromote' then
+						local UnitLevel, UnitLevelP =  CF.GetUnitLevel(eachunit)
+						local PromoteList = CF.GetAvailablePromoteList(_id)
+						local PromoteClass = PromoteList[BoxNumber]
+						local BaseClasses = {'Fighter', 'Rogue', 'Support', 'Ardent'}
+						local PrestigeClasses = {'Guardian', 'Dreadnought', 'Ranger', 'Bard', 'Restorer'}
+						local BClass = ''
+						local PClass = ''
+						for _, class in BaseClasses do
+							if string.find(PromoteClass, class) then
+								BClass = class
+							end
+						end
+						for _, class in PrestigeClasses do
+							if string.find(PromoteClass, class) then
+								PClass = class
+							end
+						end
+						LOG(BClass..' '..PClass)
+						local CostModifier = PC[PromoteClass].PromoteCostModifier(_id)
+						
+						if table.find(bp.Categories, 'EXPERIMENTAL') then
+							CostModifier = CostModifier * 2
+						end
+						local PromotingCostMalus =  math.max(4 - (GameTime()/100), 1)
+						local _objectname = self.BoxNumber
+						local _OnClickCallback = self.OnClickCallback	
+						local _MassCost = math.ceil((100 + math.pow(bp.Economy.BuildCostMass, 0.7) * 40 * (math.pow(0.90, UnitLevel))) * CostModifier * PromotingCostMalus)
+						local _EnergyCost = math.ceil((500 + math.pow(bp.Economy.BuildCostEnergy, 0.7) * 105 * (math.pow(0.90, UnitLevel))) * CostModifier * PromotingCostMalus)
+						if table.find(bp.Categories, 'COMMAND') then _EnergyCost = math.ceil(_EnergyCost * 0.02) end	
+						SimCallback	({Func=_OnClickCallback, Args = {id = _id, ability = _objectname, Allids = _Allids, Click =  0, MassCost = _MassCost, EnergyCost = _EnergyCost, PrestigeClass = PClass, BaseClass = BClass}})
 					end
 				end
-				for _, class in PrestigeClasses do
-					if string.find(PromoteClass, class) then
-						PClass = class
-					end
-				end
-				LOG(BClass..' '..PClass)
-				local CostModifier = PC[PromoteClass].PromoteCostModifier(_id)
-				
-				if table.find(bp.Categories, 'EXPERIMENTAL') then
-					CostModifier = CostModifier * 2
-				end
-				local PromotingCostMalus =  math.max(4 - (GameTime()/100), 1)
-				local _objectname = self.BoxNumber
-				local _OnClickCallback = self.OnClickCallback	
-				local _MassCost = math.ceil((100 + math.pow(bp.Economy.BuildCostMass, 0.7) * 40 * (math.pow(0.90, UnitLevel))) * CostModifier * PromotingCostMalus)
-				local _EnergyCost = math.ceil((500 + math.pow(bp.Economy.BuildCostEnergy, 0.7) * 105 * (math.pow(0.90, UnitLevel))) * CostModifier * PromotingCostMalus)
-				if table.find(bp.Categories, 'COMMAND') then _EnergyCost = math.ceil(_EnergyCost * 0.02) end	
-				SimCallback	({Func=_OnClickCallback, Args = {id = _id, ability = _objectname, Allids = _Allids, Click =  0, MassCost = _MassCost, EnergyCost = _EnergyCost, PrestigeClass = PClass, BaseClass = BClass}})
 			end
 		end
 		if self.OnClickCallback and event.Type == 'ButtonPress' and event.Modifiers.Right then
@@ -220,23 +223,30 @@ function CreateClickBox(UI, BoxNumber, BoxPath, BoxPathMouseEnter, xFromParent, 
 		if event.Type == 'MouseEnter' then -- and event.Modifiers.Shift
 			self:SetTexture(UIUtil.UIFile(BoxPathMouseEnter))
 			if OnClickCallback == 'OnChoosePromotion' then
-				local unit = GetSelectedUnits()
-				local id = unit[1]:GetEntityId()
-				local bp = unit[1]:GetBlueprint()
-				local PromoteList = CF.GetAvailablePromoteList(id)
+				local _MassCost = 0
+				local _EnergyCost = 0
+				local units = GetSelectedUnits()
+				local PromoteList = CF.GetAvailablePromoteList(units[1]:GetEntityId())
 				local PromoteClass = PromoteList[BoxNumber]
-				local CostModifier = PC[PromoteClass].PromoteCostModifier(id)
-				if table.find(bp.Categories, 'EXPERIMENTAL') then
-					CostModifier = CostModifier * 2
+				local id1 = units[1]:GetEntityId()
+				for _,unit in units do
+					local id = unit:GetEntityId()
+					if DM.GetProperty(id,'PrestigeClass') == 'NeedPromote' then
+						local bp = unit:GetBlueprint()
+						local CostModifier = PC[PromoteClass].PromoteCostModifier(id)
+						if table.find(bp.Categories, 'EXPERIMENTAL') then
+							CostModifier = CostModifier * 2
+						end
+						local PromotingCostMalus =  math.max(4 - (GameTime()/100), 1)
+						local UnitLevel, UnitLevelP =  CF.GetUnitLevel(unit[1])
+						_MassCost = math.ceil((100 + math.pow(bp.Economy.BuildCostMass, 0.7) * 40 * (math.pow(0.90, UnitLevel))) * CostModifier * PromotingCostMalus) + _MassCost
+						_EnergyCost = math.ceil((500 + math.pow(bp.Economy.BuildCostEnergy, 0.7) * 105 * (math.pow(0.90, UnitLevel))) * CostModifier * PromotingCostMalus) + _EnergyCost
+						if table.find(bp.Categories, 'COMMAND') then _EnergyCost = math.ceil(_EnergyCost * 0.02) end
+					end
 				end
-				local PromotingCostMalus =  math.max(4 - (GameTime()/100), 1)
-				local UnitLevel, UnitLevelP =  CF.GetUnitLevel(unit[1])
-				local _MassCost = math.ceil((100 + math.pow(bp.Economy.BuildCostMass, 0.7) * 40 * (math.pow(0.90, UnitLevel))) * CostModifier * PromotingCostMalus)
-				local _EnergyCost = math.ceil((500 + math.pow(bp.Economy.BuildCostEnergy, 0.7) * 105 * (math.pow(0.90, UnitLevel))) * CostModifier * PromotingCostMalus)
-				if table.find(bp.Categories, 'COMMAND') then _EnergyCost = math.ceil(_EnergyCost * 0.02) end				
 				local tooltip = {
 									text ='Promote to '..PromoteClass,
-									body = PC[PromoteClass].Description(id)..'.........................  Mass cost ( '.._MassCost..' ) ............  Energy cost ( '.._EnergyCost..' )'
+									body = PC[PromoteClass].Description(id1)..'.........................  Mass cost ( '.._MassCost..' ) ............  Energy cost ( '.._EnergyCost..' )'
 								}
 				Tooltip.CreateMouseoverDisplay(self, tooltip, 0, true)
 			end	
@@ -272,28 +282,29 @@ function TechTree_LandsUnits(id)
 	local TechUi = {}
 	local unit = GetUnitById(id)
 	local Army = unit:GetArmy()
-	local dialogContent, title, dialog = UiH.InitDialogContent(1200, 780, "Upgrade your land units Heroes")
+	local dialogContent, title, dialog = UiH.InitDialogContent(900, 530, "Upgrade your units")
 	local Tree = LandTechTreeModifiers
 	local XP = DM.GetProperty('Global'..unit:GetArmy(), 'LandMobileXP', 0)
-	local TechPointsAvailable =  math.floor(math.floor(XP/250) - DM.GetProperty('Global'..unit:GetArmy(), 'LandMobileXPSpentPoints', 0))
+	local TechPointsSpent =  math.floor(math.floor(XP/250) - DM.GetProperty('Global'..unit:GetArmy(), 'LandMobileXPSpentPoints', 0))
+	local MassCost = 0
 	local SpentPoints = 0
 	local ProjectTrains = {}
-	TechUi['LTree'] = UiH.CreateButtonBitmap(dialogContent, ModPathIcons..'Techtrees/Landunits.dds', ModPathIcons..'Techtrees/Landunits.dds', 'AtLeftIn', dialogContent, 0, 'Below', dialogContent, -740)
+	TechUi['LTree'] = UiH.CreateButtonBitmap(dialogContent, ModPathIcons..'Techtrees/Techtree.dds', ModPathIcons..'Techtrees/Techtree.dds', 'AtLeftIn', dialogContent, 0, 'Below', dialogContent, -530)
 	TechUi['LTree']:DisableHitTest(true)
 	
-	infoTextb['TechPoints'] = UiH.CreateTextArea(dialogContent, 900, 45, '', 'AtLeftIn' , dialogContent, 50, 'AtBottomIn', dialogContent, 120, nil, nil, nil)
-	infoTextb['TechPoints']:SetText("Research Points (spent / available) : "..SpentPoints.." / "..TechPointsAvailable)
-	infoTextb['XP'] = UiH.CreateTextArea(dialogContent, 900, 45, '', 'AtLeftIn' , dialogContent, 50, 'AtBottomIn', dialogContent, 105, nil, nil, Color.PURPLE2)
-	infoTextb['XP']:SetText('Total Experience Earned by land units : '..XP)
+	infoTextb['TechPoints'] = UiH.CreateTextArea(dialogContent, 100, 45, '', 'AtLeftIn' , dialogContent, 20, 'AtBottomIn', dialogContent, 200, 11, 'zeroes_3', Color.GREY_LIGHT)
+	infoTextb['TechPoints']:SetText("Mass cost : "..SpentPoints.." / "..TechPointsSpent)
+	infoTextb['XP'] = UiH.CreateTextArea(dialogContent, 900, 45, '', 'AtLeftIn' , dialogContent, 50, 'AtBottomIn', dialogContent, 105, nil, nil, Color.CYBRAN)
+	infoTextb['XP']:SetText('')
 	
-	infoTextb['Help'] = UiH.CreateTextArea(dialogContent, 900, 45, '', 'AtLeftIn' , dialogContent, 50, 'AtBottomIn', dialogContent, 90, nil, nil, Color.GREY_LIGHT)
-	infoTextb['Help']:SetText('Earn Research Points in battle involving your mobile lands units. Research upgrades will apply instantly on all your lands units heroes. Tech 3 upgrades will be applied instantly to your hero Armored Command Unit.')
+	-- infoTextb['Help'] = UiH.CreateTextArea(dialogContent, 900, 45, '', 'AtLeftIn' , dialogContent, 50, 'AtBottomIn', dialogContent, 90, nil, nil, Color.GREY_LIGHT)
+	-- infoTextb['Help']:SetText('Earn Research Points in battle involving your mobile lands units. Research upgrades will apply instantly on all your lands units heroes. Tech 3 upgrades will be applied instantly to your hero Armored Command Unit.')
 		
 	function Refresh(obj, NName)
 		RecordTrains()
 		for NodeName, NodeFunction in Tree do
 			TNode = 'LTree'..NodeName
-			if Tree[NodeName].CanTechUp(id, TechUi[TNode].Level, ProjectTrains, SpentPoints, TechPointsAvailable)  == true then
+			if Tree[NodeName].CanTechUp(id, TechUi[TNode].Level, ProjectTrains, SpentPoints, TechPointsSpent)  == true then
 				TechUi[TNode].Upgradable = true
 			else
 				TechUi[TNode].Upgradable = false
@@ -304,7 +315,7 @@ function TechTree_LandsUnits(id)
 				TechUi[TNode].RefreshTooltip(text, body, obj)	
 			end
 		end
-		infoTextb['TechPoints']:SetText("Research Points (spent / available) : "..SpentPoints.." / "..TechPointsAvailable)
+		infoTextb['TechPoints']:SetText("Mass cost : "..MassCost)
 	end
 	
 	function RecordTrains()
@@ -319,7 +330,7 @@ function TechTree_LandsUnits(id)
 		TNode = 'LTree'..NodeName
 		local level = 0
 		local Army = unit:GetArmy()
-		if DM.GetProperty('Global'..Army, 'LandMobileTech'..NodeName) then level =  DM.GetProperty('Global'..Army, 'LandMobileTech'..NodeName) end
+		if DM.GetProperty('Global'..Army, 'Tech'..NodeName) then level =  DM.GetProperty('Global'..Army, 'Tech'..NodeName) end
 		TechUi[TNode], TechUi[TNode..'Text'], TechUi[TNode..'Up'] = NodeFunction.CreateNode(id, TechUi['LTree'], level)
 		text, body = NodeFunction.Description(id, level)
 		TechUi[TNode].SetTooltip(text, body)
@@ -327,21 +338,21 @@ function TechTree_LandsUnits(id)
 		TechUi[TNode], TechUi[TNode..'Text'] = NodeFunction.UpdateNode(id, TechUi[TNode], TechUi[TNode..'Text'], TechUi[TNode..'Up'], level)
 		TechUi['LTree'..NodeName].OnClickLeft = function(NName)
 			RecordTrains()
-			if Tree[NName].CanTechUp(id, TechUi['LTree'..NName].Level, ProjectTrains, SpentPoints, TechPointsAvailable)  == true then
+			if Tree[NName].CanTechUp(id, TechUi['LTree'..NName].Level, ProjectTrains, SpentPoints, TechPointsSpent)  == true then
 				TechUi['LTree'..NName].Level = TechUi['LTree'..NName].Level + 1
-				SpentPoints = SpentPoints + 1
-				Refresh(TechUi['LTree'..NName], NName, ProjectTrains, SpentPoints, TechPointsAvailable)
+				MassCost = MassCost + Tree[NName].GetMassCost(id, TechUi['LTree'..NName].Level)
+				Refresh(TechUi['LTree'..NName], NName, ProjectTrains, SpentPoints, TechPointsSpent)
 			end
 		end
 		TechUi['LTree'..NodeName].OnClickRight = function(NName)
 			RecordTrains()
 			local MinimumLevel = 0
 			local Army = unit:GetArmy()
-			if DM.GetProperty('Global'..Army, 'LandMobileTech'..NName) then MinimumLevel =  DM.GetProperty('Global'..Army, 'LandMobileTech'..NName) end
+			if DM.GetProperty('Global'..Army, 'Tech'..NName) then MinimumLevel =  DM.GetProperty('Global'..Army, 'Tech'..NName) end
 			if Tree[NName].CanTechDown(id, TechUi['LTree'..NName].Level, ProjectTrains, MinimumLevel) == true then
 				TechUi['LTree'..NName].Level = TechUi['LTree'..NName].Level - 1
-				SpentPoints = SpentPoints - 1
-				Refresh(TechUi['LTree'..NName], NName, ProjectTrains, SpentPoints, TechPointsAvailable)
+				MassCost = MassCost - Tree[NName].GetMassCost(id, TechUi['LTree'..NName].Level + 1)
+				Refresh(TechUi['LTree'..NName], NName, ProjectTrains, SpentPoints, TechPointsSpent)
 			end
 		end
 		TechUi['LTree'..NodeName].OnMouse_Enter = function(NName)
@@ -350,17 +361,23 @@ function TechTree_LandsUnits(id)
 	end
 	Refresh()
 	
-	local okBtn = UiH.CreateButton(dialogContent,'/BUTTON/large/', 'Confirm changes', 'AtHorizontalCenterIn', dialogContent, nil, 'AtBottomIn', dialogContent, 5)
+	local okBtn = UiH.CreateButton(dialogContent,'/BUTTON/medium/', 'Confirm', 'AtHorizontalCenterIn', dialogContent, nil, 'AtBottomIn', dialogContent, 5)
 	okBtn.OnClick = function(self)
-		local UpdatedDataTechs = {}
-		for NodeName, NodeFunction in Tree do
-			TNode = 'LTree'..NodeName
-			if TechUi[TNode].Level > 0 then
-				UpdatedDataTechs[NodeName] =  TechUi[TNode].Level
+		local econData = GetEconomyTotals()
+		if econData.stored.MASS >= MassCost then
+			local UpdatedDataTechs = {}
+			for NodeName, NodeFunction in Tree do
+				TNode = 'LTree'..NodeName
+				if TechUi[TNode].Level > 0 then
+					UpdatedDataTechs[NodeName] =  TechUi[TNode].Level
+				end
 			end
+			SimCallback	({Func= 'UpdateDataTechs', Args = {Unitid = id, Techs = UpdatedDataTechs, Masstospend = MassCost, TechPoints = SpentPoints, Player = Army}})
+			dialog:Close()
+			-- IsinResearchCenter = false
+		else	
+			infoTextb['XP']:SetText('Not enough mass')
 		end
-		SimCallback	({Func= 'UpdateDataTechs', Args = {Unitid = id, Techs = UpdatedDataTechs, TechPoints = SpentPoints, Player = Army}})
-		dialog:Close()
 	end
 end
 
@@ -484,6 +501,7 @@ end
 function ArmorUpgrades_Dialog(_id)
 	DialogScreen.Show = 0
 	local unit = GetUnitById(_id)
+	local units = GetSelectedUnits()
 	local bp = unit:GetBlueprint()
 	local BaseClass = DM.GetProperty(_id,'BaseClass','Fighter')
 	local PrestigeClass = DM.GetProperty(_id,'PrestigeClass','Dreadnought')	
@@ -541,7 +559,14 @@ function ArmorUpgrades_Dialog(_id)
 
 	-- Checking all units and weapon category modifiers that can be used
 	for ModifierKey, ModifierData in ArmorModifiers.Modifiers do
-		if ModifierData.IsAvailable(_id) == true then
+		local found = true
+		for _,unite in units do	
+			local ide = unite:GetEntityId()
+			if ModifierData.IsAvailable(ide) ~= true then
+				found = false
+			end
+		end
+		if found == true then
 			table.insert(SpecializationList, ModifierData.Name)
 			table.insert(SpecializationKeys, ModifierKey)
 		end
@@ -1190,7 +1215,7 @@ function Training_Dialog(id)
 	local Abilities = {'Puissance', 'Dexterity', 'Hull', 'Intelligence', 'Energy'}
 	local Ttip = {
 	'Puissance increases weapons damage, weapon powers and heavy armor efficiency.', 
-	'Dexterity is the skill for adroitness. It increases minimum damages, Defense and Attack rating so the unit can dodge and hit easier.', 
+	'Dexterity is the skill for adroitness. It increases minimum damages, Defense and Accuracy so the unit can dodge and hit easier.', 
 	'Hull enforces hits points, regen speed and weapon capacitor power regen and maximum cap.', 
 	'Intelligence is the AI assistance. It increases powers effiency, power capacitor regen and increases all skills maximum cap', 
 	'Energy is the main focus for increasing all powers minimum efficiency and power capacitor maximum cap.'}
@@ -1260,9 +1285,13 @@ function Training_Dialog(id)
 	end
 	
 	okBtn.OnClick = function(self)
+		units = GetSelectedUnits()
+		for _,unit in units do
+			local id = unit:GetEntityId()
 			for i, Ability in Abilities do
 				SimCallback	({Func= 'OnTraining', Args = {Id = id, ability = Ability, weight =  Ui[Ability..'_TrainingWeight']}})
 			end
+		end
 		dialog:Close()
 	end
 end
@@ -1313,7 +1342,7 @@ function CreateUnitUi()
 	for i = 1, 32 do
 		if i == 1 then titleoffset = 0 else titleoffset = 5 end
 		local EnhTtipSlotId = 'EnhancedTooltipUi'..i
-		local EhtTtipBox, EhtTtipText = UiH.CreateClickTextWithTooltipBox(UmUi['EnhancedTooltipUi'], 'Line '..i, 'AtLeftIn', UmUi['EnhancedTooltipUi'], 5, 'AtLeftTopIn',  UmUi['EnhancedTooltipUi'], i*17 -10 + titleoffset, 12 , nil , 'ffffffaa', 'ff00ff00', ModPath.."Graphics/ProgressBar_Blank.dds", ModPath.."Graphics/ProgressBar_SoftYellow.dds", 100, 15, 5, 0)
+		local EhtTtipBox, EhtTtipText = UiH.CreateClickTextWithTooltipBox(UmUi['EnhancedTooltipUi'], 'Line '..i, 'AtLeftIn', UmUi['EnhancedTooltipUi'], 5, 'AtLeftTopIn',  UmUi['EnhancedTooltipUi'], i*14 -10 + titleoffset, 10 , 'zeroes_3' , 'ffffffaa', 'ff00ff00', ModPath.."Graphics/ProgressBar_Blank.dds", ModPath.."Graphics/ProgressBar_SoftYellow.dds", 100, 15, 5, 0)
 		EhtTtipBox.Id = i
 		EhtTtipText.Id = i
 		EhtTtipBox.OnClickLeft = function(self)
@@ -1527,33 +1556,49 @@ function CreateUnitUi()
 	UIStances:DisableHitTest(true)
 	UmUi['Stance_Normal'] = UiH.CreateButtonBitmap(UIStances, ModPathIcons..'Stance_Normal.dds', ModPathIcons..'Stance_Normal_Selected.dds', 'AtLeftIn', UIStances, 0, 'Below', UIStances, 0)
 	UmUi['Stance_Normal'].OnClickLeft = function(self)
-		local unit = GetSelectedUnits()
-		local _id = unit[1]:GetEntityId()
-		SimCallback	({Func= 'OnChangeStance', Args = {id = _id, Stance = 'Normal'}}) 
+		local units = GetSelectedUnits()
+		for _,_unit in units do
+			local _id = _unit:GetEntityId()
+			if DM.GetProperty(_id, 'PrestigeClassPromoted') == 1 then
+				SimCallback	({Func= 'OnChangeStance', Args = {id = _id, Stance = 'Normal'}}) 
+			end	
+		end
 	end
 	UmUi['Stance_Normal'].OnClickRight = function(self)
 	end
 	UmUi['Stance_Defensive'] = UiH.CreateButtonBitmap(UIStances, ModPathIcons..'Stance_Defensive.dds', ModPathIcons..'Stance_Defensive_Selected.dds', 'AtLeftIn', UIStances, 45, 'Below', UIStances, 0)
 	UmUi['Stance_Defensive'].OnClickLeft = function(self)
-		local unit = GetSelectedUnits()
-		local _id = unit[1]:GetEntityId()
-		SimCallback	({Func= 'OnChangeStance', Args = {id = _id, Stance = 'Defensive'}}) 
+		local units = GetSelectedUnits()
+		for _,_unit in units do
+			local _id = _unit:GetEntityId()
+			if DM.GetProperty(_id, 'PrestigeClassPromoted') == 1 then
+				SimCallback	({Func= 'OnChangeStance', Args = {id = _id, Stance = 'Defensive'}}) 
+			end	
+		end
 	end
 	UmUi['Stance_Defensive'].OnClickRight = function(self)
 	end
 	UmUi['Stance_Offensive'] = UiH.CreateButtonBitmap(UIStances, ModPathIcons..'Stance_Offensive.dds', ModPathIcons..'Stance_Offensive_Selected.dds', 'AtLeftIn', UIStances, 0, 'Below', UIStances, -45)
 	UmUi['Stance_Offensive'].OnClickLeft = function(self)
-		local unit = GetSelectedUnits()
-		local _id = unit[1]:GetEntityId()
-		SimCallback	({Func= 'OnChangeStance', Args = {id = _id, Stance = 'Offensive'}}) 
+		local units = GetSelectedUnits()
+		for _,_unit in units do
+			local _id = _unit:GetEntityId()
+			if DM.GetProperty(_id, 'PrestigeClassPromoted') == 1 then
+				SimCallback	({Func= 'OnChangeStance', Args = {id = _id, Stance = 'Offensive'}}) 
+			end	
+		end
 	end
 	UmUi['Stance_Offensive'].OnClickRight = function(self)
 	end
 	UmUi['Stance_Precise'] = UiH.CreateButtonBitmap(UIStances, ModPathIcons..'Stance_Precise.dds', ModPathIcons..'Stance_Precise_Selected.dds', 'AtLeftIn', UIStances, 45, 'Below', UIStances, -45)
 	UmUi['Stance_Precise'].OnClickLeft = function(self)
-		local unit = GetSelectedUnits()
-		local _id = unit[1]:GetEntityId()
-		SimCallback	({Func= 'OnChangeStance', Args = {id = _id, Stance = 'Precise'}}) 
+		local units = GetSelectedUnits()
+		for _,_unit in units do
+			local _id = _unit:GetEntityId()
+			if DM.GetProperty(_id, 'PrestigeClassPromoted') == 1 then
+				SimCallback	({Func= 'OnChangeStance', Args = {id = _id, Stance = 'Precise'}}) 
+			end	
+		end
 	end
 	UmUi['Stance_Precise'].OnClickRight = function(self)
 	end
@@ -1562,7 +1607,7 @@ function CreateUnitUi()
 	for i = 1, 30 do
 		local WeaponSlotId = 'WeaponSlot_'..i
 		-- local WeaponSlot = UiH.CreateClickTextWithTooltip(UI, WeaponSlotId, 'AtLeftIn' , UI, 10, 'Below', UI, -740 + (i * 20), 11, nil, 'ffffffaa', 'ff00ff00')
-		local WeaponSlot, WeaponSlotText  = UiH.CreateClickTextWithTooltipBox(UnitUi, WeaponSlotId, 'AtLeftIn', UmUi['BaseClass'], 0, 'Below', UmUi['BaseClass'], -170 - (i * 20), 11, nil, 'ffffffaa', 'ff00ff00', ModPath.."Graphics/ProgressBar_Brown75.dds", ModPath.."Graphics/ProgressBar_GreenDark.dds", 150, 20, 5, 2)
+		local WeaponSlot, WeaponSlotText  = UiH.CreateClickTextWithTooltipBox(UnitUi, WeaponSlotId, 'AtLeftIn', UmUi['BaseClass'], 0, 'Below', UmUi['BaseClass'], -135 - (i * 20), 11, nil, 'ffffffaa', 'ff00ff00', ModPath.."Graphics/ProgressBar_Brown75.dds", ModPath.."Graphics/ProgressBar_GreenDark.dds", 150, 20, 5, 2)
 		WeaponSlot.WeaponSlot = i
 		WeaponSlot.SetTooltip('', '')
 		WeaponSlot.OnClickLeft = function(self)	
@@ -1601,6 +1646,7 @@ function CreateUnitUi()
 			if unit then
 				local id = unit[1]:GetEntityId()
 				local bp = unit[1]:GetBlueprint()
+				local army = unit[1]:GetArmy()
 				if table.find(bp.Categories, 'COMMAND') and ACUTimer > 0 then else -- locking ACU templates at game start
 					if DM.GetProperty(id,'EcoEventProgress_'..'UpgradingArmor') or DM.GetProperty(id,'EcoEventProgress_'..'UpgradingWeapon') or DM.GetProperty(id,'EcoEventProgress_'..'ApplyingTemplate') then else
 						if UmUi['TemplateSlot_'..TemplateSlot.Slot].ClassToPromote then
@@ -1627,17 +1673,24 @@ function CreateUnitUi()
 							local _TemplateName = UmUi['TemplateSlot_'..TemplateSlot.Slot].TemplateName
 							-- LOG(_TemplateName)
 							DialogScreen.Template = ''
-							local unit = GetSelectedUnits()
-							local _id = unit[1]:GetEntityId()
-							local bp = unit[1]:GetBlueprint()
-							local _MassCost = math.ceil(CF.GetTemplateCost(_id, _TemplateName, UnitGeneralTemplates) * bp.Economy.BuildCostMass)
-							local _EnergyCost = math.ceil(CF.GetTemplateCost(_id, _TemplateName, UnitGeneralTemplates) * bp.Economy.BuildCostEnergy)
-							if table.find(bp.Categories, 'COMMAND') then _EnergyCost = _EnergyCost * 0.01 end
-							local UnitCatId = unit[1]:GetUnitId()
-							local BaseClass = DM.GetProperty(_id, 'BaseClass')
-							local PrestigeClass = DM.GetProperty(_id, 'PrestigeClass')
-							-- LOG(repr(UnitGeneralTemplates[UnitCatId][BaseClass][PrestigeClass][_TemplateName]))
-							SimCallback	({Func= 'EcoEvent', Args = {id = _id, EnergyCost = _EnergyCost, MassCost = _MassCost, TimeStress = 5, EventName = 'ApplyingTemplate', TemplateName = _TemplateName, Modifiers = UnitGeneralTemplates[UnitCatId][BaseClass][PrestigeClass][_TemplateName]}})
+							local MassCost = 0
+							local EnergyCost = 0
+							local Logistics = DM.GetProperty('Global'..army, 'Logistics')
+							local EnergyCostMod = 1
+							for _,_unit in unit do
+								if  DM.GetProperty(id, 'PrestigeClassPromoted') == 1 and (Logistics - CF.GetLogisticCost(_unit)) >= 0 and CF.CanEquip(_unit, unit[1], _TemplateName, UnitGeneralTemplates) == true then
+									local idu = _unit:GetEntityId()
+									local bpu = _unit:GetBlueprint()
+									local UnitCatId = _unit:GetUnitId()
+									if table.find(bpu.Categories, 'COMMAND') then EnergyCostMod = 0.01 else EnergyCostMod = 1 end
+									_MassCost = MassCost + math.ceil(CF.GetTemplateCost(idu, _TemplateName, UnitGeneralTemplates) * bpu.Economy.BuildCostMass)
+									_EnergyCost = EnergyCost + math.ceil(CF.GetTemplateCost(idu, _TemplateName, UnitGeneralTemplates) * bpu.Economy.BuildCostEnergy * EnergyCostMod)
+									Logistics = Logistics - CF.GetLogisticCost(_unit)
+									local BaseClass = DM.GetProperty(id, 'BaseClass')
+									local PrestigeClass = DM.GetProperty(id, 'PrestigeClass')
+									SimCallback	({Func= 'EcoEvent', Args = {id = idu, EnergyCost = _EnergyCost, MassCost = _MassCost, TimeStress = 5, EventName = 'ApplyingTemplate', TemplateName = _TemplateName, Modifiers = UnitGeneralTemplates[UnitCatId][BaseClass][PrestigeClass][_TemplateName]}})
+								end	
+							end
 						end
 					end
 				end
@@ -1663,7 +1716,7 @@ function CreateUnitUi()
 	end
 	
 	-- Landtech Research
-	UmUi['LandTech'], UmUi['LandTechtext']  = UiH.CreateClickTextWithTooltipBox(UnitUi, 'Land heroes Research', 'AtLeftIn', UmUi['BaseClass'], 0, 'Below', UmUi['BaseClass'], -160, 11, nil, 'ffffffaa', 'ff00ff00', ModPath.."Graphics/ProgressBar_Brown75.dds", ModPath.."Graphics/ProgressBar_GreenDark.dds", 150, 20, 5, 2)
+	UmUi['LandTech'], UmUi['LandTechtext']  = UiH.CreateClickTextWithTooltipBox(UnitUi, 'Land heroes Research', 'AtLeftIn', UmUi['BaseClass'], 15, 'Below', UmUi['BaseClass'], -10, 11, nil, 'ffffffaa', 'ff00ff00', ModPath.."Graphics/ProgressBar_Brown75.dds", ModPath.."Graphics/ProgressBar_GreenDark.dds", 150, 20, 5, 2)
 	UmUi['LandTech'].OnClickLeft = function(self)
 		local unit = GetSelectedUnits()
 		if unit then
@@ -1680,8 +1733,8 @@ function CreateUnitUi()
 	end
 
 	-- Upgrade infoText
-	UmUi['Upgradeinfotext'] = UiH.CreateText(UnitUi, '<<< [ Click to upgrade armor ] ', 'AtLeftIn', UmUi['BaseClass'], 55, 'Below', UmUi['BaseClass'], -105, 11, nil, Color.AEON)
-	UmUi['Upgradeinfotext2'] = UiH.CreateText(UnitUi, '<<< [ Click to upgrade weapon ] ', 'AtLeftIn', UmUi['BaseClass'], 155, 'Below', UmUi['BaseClass'], -185, 11, nil, Color.AEON)
+	UmUi['Upgradeinfotext'] = UiH.CreateText(UnitUi, '<<< [ Click to upgrade armor ] ', 'AtLeftIn', UmUi['BaseClass'], 55, 'Below', UmUi['BaseClass'], -95, 11, nil, Color.AEON)
+	UmUi['Upgradeinfotext2'] = UiH.CreateText(UnitUi, '<<< [ Click to upgrade weapon ] ', 'AtLeftIn', UmUi['BaseClass'], 155, 'Below', UmUi['BaseClass'], -155, 11, nil, Color.AEON)
 	UmUi['Regeninfotext'] = UiH.CreateText(UnitUi, "No enough energy storage or income to regen your hero's capacitors", 'AtLeftIn', UmUi['BaseClass'], 725, 'Below', UmUi['BaseClass'], 112, 11, nil, Color.CYBRAN)
 		
 	-- Promotion infoText
@@ -1700,7 +1753,7 @@ function TickShow()
 	for i = 1, 80 do
 		UmUi['PowerBox_' .. i]:Hide()
 	end
-	if unit then
+	if unit and (DM.GetProperty(unit[1]:GetEntityId(), 'Military') == true or table.find(unit[1]:GetBlueprint().Categories, 'FACTORY') or table.find(unit[1]:GetBlueprint().Categories, 'RESEARCHCENTER')) then
 		local id = unit[1]:GetEntityId()
 		local bp = unit[1]:GetBlueprint()
 		
@@ -1776,7 +1829,7 @@ function TickShow()
 		RefreshUpgradeHelp(id)
 		RefreshLandResearch(id)
 		RefreshPromotionLock(id)
-		ResfreshAIDifficulty()
+		RefreshAIDifficulty()
 		--- Sync buff values to show them in Ui
 		AoHBuff.SyncBuffValue(id, 'PowerDamage', 'ALL')
 		AoHBuff.SyncBuffValue(id, 'Defense', 'ALL')
@@ -1801,7 +1854,7 @@ function TickShow()
 	end
 end
 
-function ResfreshAIDifficulty()
+function RefreshAIDifficulty()
 	if (GameTime() - DM.GetProperty('Global','LastAIDifficultyChange', 0)) < 0 then -- locked feature since mod version 135
 		UmUi['PromotionChangingDifficultyInfoText']:SetText('INFO : AI difficulty set to : '..DM.GetProperty('Global','AI_Difficulty', 'Low Trained Imperial Troops'))
 	else
@@ -1862,30 +1915,45 @@ function RefreshLogistic(id)
 	local unit = GetUnitById(id)
 	
 	UmUi['Logistictext']:SetText('Logistic Points Left :  '..DM.GetProperty('Global'..unit:GetArmy(), 'Logistics', 0))
-	-- Locked feature since version 135
-	-- if UmUi['Logistic'].OnMouseEnter  then	
-		-- EnhTtipTimer = 0
-		-- LastTooltipTarget = 'LogisticsUi'
-		-- local Tp = {} Tp.Line = {} Tp.Width = 240 Tp.OffSetX = 180 Tp.OffSetY = 40
-		-- if DM.GetProperty(id, 'HallofFame_Rank') then
-			-- local UnitRank = DM.GetProperty(id, 'HallofFame_Rank', nil)
-			-- table.insert(Tp.Line, {'Your unit rank : '..UnitRank,  Color.AEON})
-			-- table.insert(Tp.Line, {''})
-		-- end
-		-- table.insert(Tp.Line, {'[Left Click]  Go to Heroes - Hall of Fame -'})
-		-- SetEnhancedTooltip(UmUi['Logistic'], Tp, '', '')
-	-- end
+	if UmUi['Logistic'].OnMouseEnter  then	
+		EnhTtipTimer = 0
+		LastTooltipTarget = 'LogisticsUi'
+		local Tp = {} Tp.Line = {} Tp.Width = 240 Tp.OffSetX = 180 Tp.OffSetY = 40
+		table.insert(Tp.Line, {'Level Up your Heroes to generate Logistics'})
+		SetEnhancedTooltip(UmUi['Logistic'], Tp, '', '')
+	end
 end
 
 function RefreshLandResearch(id)
 	local unit = GetUnitById(id)
 	local bp = unit:GetBlueprint()
-	local XP = DM.GetProperty('Global'..unit:GetArmy(), 'LandMobileXP', 0)
-	if DM.GetProperty(id,'PrestigeClassPromoted', nil) == 1 and table.find(bp.Categories, 'LAND') and table.find(bp.Categories, 'MOBILE') then 
-		local TechPointsAvailable =  math.floor(math.floor(XP/250) - DM.GetProperty('Global'..unit:GetArmy(), 'LandMobileXPSpentPoints', 0))
+	-- local XP = DM.GetProperty('Global'..unit:GetArmy(), 'LandMobileXP', 0)
+	if table.find(bp.Categories, 'RESEARCHCENTER') then 
+		-- local TechPointsAvailable =  math.floor(math.floor(XP/250) - DM.GetProperty('Global'..unit:GetArmy(), 'LandMobileXPSpentPoints', 0))
 		UmUi['LandTech']:Show()
 		UmUi['LandTechtext']:Show()
-		UmUi['LandTechtext']:SetText('Heroes tech tree  [ '..TechPointsAvailable..' ]')
+		UmUi['LandTechtext']:SetText('*-- Enter Research Center --*')
+		UmUi['BaseClass']:Hide()
+		UmUi['PrestigeClass']:Hide()
+		UmUi['UnitLevel']:Hide()
+		UmUi['ArmorResist']:Hide()
+		UmUi['DodgeChance']:Hide()
+		UmUi['Logistic']:Hide()
+		UmUi['Logistictext']:Hide()
+		-- if IsinResearchCenter == false then
+			-- TechTree_LandsUnits(id)
+			-- IsinResearchCenter = true
+		-- end
+	elseif table.find(bp.Categories, 'FACTORY') then
+		UmUi['LandTech']:Hide()
+		UmUi['LandTechtext']:Hide()
+		UmUi['BaseClass']:Hide()
+		UmUi['PrestigeClass']:Hide()
+		UmUi['UnitLevel']:Hide()
+		UmUi['ArmorResist']:Hide()
+		UmUi['DodgeChance']:Hide()
+		UmUi['Logistic']:Hide()
+		UmUi['Logistictext']:Hide()
 	else
 		UmUi['LandTech']:Hide()
 		UmUi['LandTechtext']:Hide()
@@ -1894,7 +1962,7 @@ function RefreshLandResearch(id)
 		EnhTtipTimer = 0
 		LastTooltipTarget = 'LandTechUi'
 		local Tp = {} Tp.Line = {} Tp.Width = 240 Tp.OffSetX = 180 Tp.OffSetY = 40
-		table.insert(Tp.Line, {'[Left Click]  Go to Land Units Research'})
+		table.insert(Tp.Line, {'[Left Click]  Go to Research Center'})
 		SetEnhancedTooltip(UmUi['LandTech'], Tp, '', '')
 	end
 end
@@ -1902,23 +1970,32 @@ end
 	
 function RefreshPromotionBox(id)
 	PromotionUiTimer = PromotionUiTimer + 0.025
-	local unit = GetUnitById(id)
+	local _unit = GetUnitById(id)
+	local _bp = _unit:GetBlueprint()
 	local BoxHitTest = false
 	-- Hiding promote Boxes
 	for i = 1, 32 do
 		UmUi['TextBox_' .. i]:Hide()
 		UmUi['Box_' .. i]:Hide()
 	end
-	local function ShowPromoteBoxes(unit)
-		local bp = unit:GetBlueprint()
+	local function ShowPromoteBoxes(_unit)
 		local LogisticPoints = 0
-		if table.find(bp.Categories, 'STRUCTURE') then 
-			LogisticPoints = DM.GetProperty('Global'..unit:GetArmy(), 'Logistics', 0) - CF.GetUnitTech(unit)
-		else
-			LogisticPoints = DM.GetProperty('Global'..unit:GetArmy(), 'Logistics', 0) - 2 * CF.GetUnitTech(unit)
+		local Units = GetSelectedUnits()
+		local LogisticsCost = 0
+		for _,unit in Units do
+			local bp = unit:GetBlueprint()
+			local TempLogisticsCost = 0
+			if table.find(bp.Categories, 'STRUCTURE') then 
+				TempLogisticsCost = math.ceil(math.pow(bp.Economy.BuildCostMass / 10, 0.6))
+			else
+				TempLogisticsCost = math.ceil(math.pow(bp.Economy.BuildCostMass / 10, 0.6)) * 2
+			end
+			if table.find(bp.Categories, 'COMMAND') then TempLogisticsCost = 0 end
+			LogisticsCost = LogisticsCost + TempLogisticsCost
 		end
+		LogisticPoints = DM.GetProperty('Global'.._unit:GetArmy(), 'Logistics', 0) - LogisticsCost
 		local LockingACUPromotion = false
-		if GameTime() < 300 and table.find(bp.Categories, 'COMMAND') then LockingACUPromotion = true end
+		if GameTime() < 300 and table.find(_bp.Categories, 'COMMAND') then LockingACUPromotion = true end
 		if LogisticPoints >= 0 and LockingACUPromotion == false then
 			local PromoteList = CF.GetAvailablePromoteList(id)
 			local len = table.getn(PromoteList)
@@ -1944,7 +2021,7 @@ function RefreshPromotionBox(id)
 	end
 	if PromotionUiTimer < 0.5 then
 		if DM.GetProperty(id,'EcoEventProgress_'..'Promoting') then else
-			if DM.GetProperty(id,'PrestigeClass') == 'NeedPromote' and DM.GetProperty(id, 'IsBuilt', false) then ShowPromoteBoxes(unit) end
+			if DM.GetProperty(id,'PrestigeClass') == 'NeedPromote' and DM.GetProperty(id, 'IsBuilt', false) then ShowPromoteBoxes(_unit) end
 		end
 	end
 	if UmUi['PrestigeClass'].OnMouseEnter == true or BoxHitTest == true then PromotionUiTimer = 0 end
@@ -2068,51 +2145,49 @@ function RefreshWeaponSlots(id)
 				table.insert(Tp.Line, {'  '..bp.Weapon[WeaponIndexList[i]].WeaponCategory, Color.PURPLE})
 				local MinRadius = bp.Weapon[WeaponIndexList[i]].MinRadius or 0
 				local MaxRadius = bp.Weapon[WeaponIndexList[i]].MaxRadius or 0
-				table.insert(Tp.Line, {'  Range  : '..MinRadius..' - '..MaxRadius, Color.GREY_LIGHT})
-				local distfromtarget = DM.GetProperty(id, 'DistanceFromTarget'..'_Weapon_'..wi) or 'No Target'
-				local AttackRatingUpgrade = DM.GetProperty(id, 'Upgrade_Weapon_'..wi..'_Attack Rating') or 0
-				if distfromtarget != 'No Target' then
-					table.insert(Tp.Line, {''})
-					table.insert(Tp.Line, {'Target'})
-					local DamageRadius = bp.Weapon[WeaponIndexList[i]].DamageRadius or 0
-					local AttackRating = (CF.GetAttackRating(unit) + AttackRatingUpgrade) * math.pow(0.75, distfromtarget / 10) * (math.pow(DamageRadius, 0.2) + 1)
-					table.insert(Tp.Line, {'  '..'Attack Rating : '..math.ceil(AttackRating), Color.WHITE})
-					if DM.GetProperty(id, 'Accuracy'..'_Weapon_'..wi) then
-						table.insert(Tp.Line, {'  '..'Accuracy : '..math.ceil(DM.GetProperty(id, 'Accuracy'..'_Weapon_'..wi))..' %', Color.WHITE})
-					end
+				local RangeUpgrade = ''
+				local TechRange = DM.GetProperty(id, 'Tech_Range', 0)
+				if DM.GetProperty(id, 'Upgrade_Weapon_'..wi..'_'..'Range') or DM.GetProperty(id, 'Tech_Range') then
+					TechRange = TechRange + DM.GetProperty(id, 'Upgrade_Weapon_'..wi..'_'..'Range', 0)
+					RangeUpgrade = ' (+ '..RangeUpgrade..TechRange..')'
+					MaxRadius = MaxRadius + TechRange
 				end
-				table.insert(Tp.Line, {''})
-				table.insert(Tp.Line, {'Damage stats  : '})
+				if DM.GetProperty(id, 'Upgrade_Weapon_'..wi..'_'..'Range') then
+					table.insert(Tp.Line, {'  Range  : '..MinRadius..' - '..MaxRadius..RangeUpgrade, Color.AEON})
+				else
+					table.insert(Tp.Line, {'  Range  : '..MinRadius..' - '..MaxRadius..RangeUpgrade, Color.GREY_LIGHT})
+				end
+				-- local distfromtarget = DM.GetProperty(id, 'DistanceFromTarget'..'_Weapon_'..wi) or 'No Target'
 				local projtype = 'Projectile'
 				if bp.Weapon[WeaponIndexList[i]].ContinuousBeam then
 					projtype = 'Continuous Beam'
 				end
-				if bp.Weapon[WeaponIndexList[i]].Damage > 200 then
-					table.insert(Tp.Line, {'  '..projtype..' base damage  : '..bp.Weapon[WeaponIndexList[i]].Damage, Color.AEON})
-				elseif bp.Weapon[WeaponIndexList[i]].Damage >= 100 then
-					table.insert(Tp.Line, {'  '..projtype..' base damage  : '..bp.Weapon[WeaponIndexList[i]].Damage, Color.GREY_LIGHT})
-				else
-					table.insert(Tp.Line, {'  '..projtype..' base damage  : '..bp.Weapon[WeaponIndexList[i]].Damage, Color.CYBRAN})
-				end
-				local DamageBuff = math.ceil(CF.GetDamageRating(unit) * 100) + DM.GetProperty(id, 'Buff_Damage_ALL_Add', 0)
-				if DamageBuff >= 0 then
-					table.insert(Tp.Line, {'  '..'Damage bonus : +'..DamageBuff..' %', Color.AEON})
-				else
-					table.insert(Tp.Line, {'  '..'Damage bonus : '..DamageBuff..' %', Color.CYBRAN})
-				end
-				local DamageClassMod = 1
 				
+				local DamageBuff = math.ceil(CF.GetDamageRating(unit) * 100) + DM.GetProperty(id, 'Buff_Damage_ALL_Add', 0)
+				local Tech_Dam = DM.GetProperty(id, 'Tech_Damage', 0)
+				local DamageClassMod = 0
 				local BaseClass =  DM.GetProperty(id, 'BaseClass', 'Fighter')
 				local PrestigeClass = DM.GetProperty(id, 'PrestigeClass')
 				if DM.GetProperty(id,'PrestigeClassPromoted') == 1 and DM.GetProperty(id, 'Stamina') > 5 then
 					DamageClassMod = BCbp[BaseClass]['DamagePromotionModifier'] * 100
 					if bp.Weapon[WeaponIndexList[i]].DisplayName == 'Heavy Microwave Laser' then
 						DamageClassMod = -50
-						table.insert(Tp.Line, {'  '..'Beam Instability Malus : '..DamageClassMod..' %', Color.CYBRAN})
-					else
-						table.insert(Tp.Line, {'  '..'Weapon Capacitor Damage bonus : +'..DamageClassMod..' %', Color.AEON})
 					end
 				end
+				local Dmgup = 0
+				if DM.GetProperty(id, 'Upgrade_Weapon_'..wi..'_'..'Damage to All Units') then
+					Dmgup = DM.GetProperty(id, 'Upgrade_Weapon_'..wi..'_'..'Damage to All Units')
+				end
+				local Projdam = math.ceil(bp.Weapon[WeaponIndexList[i]].Damage * (1 + DamageClassMod/100 + DamageBuff/100 + Dmgup/100 + Tech_Dam/100))
+				local Dambonus = math.ceil(bp.Weapon[WeaponIndexList[i]].Damage * (DamageClassMod/100 + DamageBuff/100 + Dmgup/100 + Tech_Dam/100))
+				if bp.Weapon[WeaponIndexList[i]].Damage < Projdam then
+					table.insert(Tp.Line, {'  '..projtype..' damage  : '..Projdam..'  (+'..Dambonus..')', Color.AEON})
+				elseif bp.Weapon[WeaponIndexList[i]].Damage == Projdam then
+					table.insert(Tp.Line, {'  '..projtype..' damage  : '..Projdam, Color.GREY_LIGHT})
+				else
+					table.insert(Tp.Line, {'  '..projtype..' damage  : '..Projdam, Color.CYBRAN})
+				end
+	
 				if bp.Weapon[WeaponIndexList[i]].ProjectilesPerOnFire and bp.Weapon[WeaponIndexList[i]].ProjectilesPerOnFire > 1 then
 					table.insert(Tp.Line, {'    x '..bp.Weapon[WeaponIndexList[i]].ProjectilesPerOnFire ..' projectiles', Color.AEON})
 				end
@@ -2125,16 +2200,41 @@ function RefreshWeaponSlots(id)
 				end
 				if bp.Weapon[WeaponIndexList[i]].DamageRadius > 0 then
 					table.insert(Tp.Line, {'  Damage Radius  : '..string.format("%.2f", bp.Weapon[WeaponIndexList[i]].DamageRadius), Color.AEON})
-				else
-					table.insert(Tp.Line, {'  Damage Radius  : '..string.format("%.2f", bp.Weapon[WeaponIndexList[i]].DamageRadius), Color.GREY_LIGHT})
 				end
-				if bp.Weapon[WeaponIndexList[i]].RateOfFire > 2 then
-					table.insert(Tp.Line, {'  Rate of Fire  : '..string.format("%.2f", bp.Weapon[WeaponIndexList[i]].RateOfFire)..' / s', Color.AEON})
-				elseif bp.Weapon[WeaponIndexList[i]].RateOfFire >= 1 then 
-					table.insert(Tp.Line, {'  Rate of Fire  : '..string.format("%.2f", bp.Weapon[WeaponIndexList[i]].RateOfFire)..' / s', Color.GREY_LIGHT})
-				else
-					table.insert(Tp.Line, {'  Rate of Fire  : '..string.format("%.2f", bp.Weapon[WeaponIndexList[i]].RateOfFire)..' / s', Color.CYBRAN})
+				local Rofbonus = 0
+				if DM.GetProperty(id, 'Upgrade_Weapon_'..wi..'_'..'Rate Of Fire') then
+					Rofbonus = DM.GetProperty(id, 'Upgrade_Weapon_'..wi..'_'..'Rate Of Fire')
 				end
+				local stancemod = CF.GetRateOfFireRating(unit)
+				local ProjRof = math.min((bp.Weapon[WeaponIndexList[i]].RateOfFire * (1 + Rofbonus/100)) * stancemod, 10)
+				local Rofbonus = ProjRof - bp.Weapon[WeaponIndexList[i]].RateOfFire
+				if ProjRof > bp.Weapon[WeaponIndexList[i]].RateOfFire then
+					table.insert(Tp.Line, {'  Rate of Fire  : '..string.format("%.2f", ProjRof)..'  (+'..string.format("%.2f", Rofbonus)..')', Color.AEON})
+				elseif ProjRof == bp.Weapon[WeaponIndexList[i]].RateOfFire then 
+					table.insert(Tp.Line, {'  Rate of Fire  : '..string.format("%.2f", ProjRof), Color.GREY_LIGHT})
+				else
+					table.insert(Tp.Line, {'  Rate of Fire  : '..string.format("%.2f", ProjRof)..'  ('..string.format("%.2f", Rofbonus)..')', Color.CYBRAN})
+				end
+				local distfromtarget = DM.GetProperty(id, 'DistanceFromTarget'..'_Weapon_'..wi) or 0
+				local ATR_Tech = DM.GetProperty(id, 'Tech_Accuracy', 0)
+				local AttackRatingUpgrade = (DM.GetProperty(id, 'Upgrade_Weapon_'..wi..'_Attack Rating') or 0) + ATR_Tech
+				local Stance = DM.GetProperty(id,'StanceState')
+				-- if distfromtarget != 'No Target' then
+					-- table.insert(Tp.Line, {''})
+					-- table.insert(Tp.Line, {'Target'})
+					local DamageRadius = bp.Weapon[WeaponIndexList[i]].DamageRadius or 0
+					local AttackRating = (CF.GetAttackRating(unit, Stance) + AttackRatingUpgrade + ATR_Tech) * math.pow(0.75, distfromtarget / 10) * (math.pow(DamageRadius, 0.2) + 1)
+					if AttackRatingUpgrade > 0 then
+						table.insert(Tp.Line, {'  '..'Accuracy : '..math.ceil(AttackRating)..' (+'..AttackRatingUpgrade..')', Color.AEON})
+					else
+						table.insert(Tp.Line, {'  '..'Accuracy : '..math.ceil(AttackRating), Color.GREY_LIGHT})
+					end
+					-- if DM.GetProperty(id, 'Accuracy'..'_Weapon_'..wi) then
+						-- table.insert(Tp.Line, {'  '..'Accuracy : '..math.ceil(DM.GetProperty(id, 'Accuracy'..'_Weapon_'..wi))..' %', Color.WHITE})
+					-- end
+				-- end
+				-- table.insert(Tp.Line, {''})
+				-- table.insert(Tp.Line, {'Damage stats  : '})
 				table.insert(Tp.Line, {''})
 				table.insert(Tp.Line, {'Upgrades  : '})
 				local UpgradeSpotted = false
@@ -2225,8 +2325,19 @@ function RefreshTemplates(id)
 			PrestigeClass = PrestigeClassList[i]
 			CostModifier = PC[PrestigeClass].PromoteCostModifier(id)
 			local PromotingCostMalus =  math.max(4 - (GameTime()/100), 1)
-			local MassCost = math.ceil(CF.GetTemplateCost(id, templatename, UnitGeneralTemplates, PrestigeClass) * bp.Economy.BuildCostMass) + math.ceil((100 + math.pow(bp.Economy.BuildCostMass, 0.7) * 30 * (math.pow(0.90, UnitLevel))) * CostModifier * PromotingCostMalus)
-			local EnergyCost = math.ceil(CF.GetTemplateCost(id, templatename, UnitGeneralTemplates, PrestigeClass) * bp.Economy.BuildCostEnergy) + math.ceil((500 + math.pow(bp.Economy.BuildCostEnergy, 0.7) * 30 * (math.pow(0.90, UnitLevel))) * CostModifier * PromotingCostMalus)
+			local MassCost = 0
+			local EnergyCost = 0
+			local Units = GetSelectedUnits()
+			local aiBrain = GetArmyBrain(unit:GetArmy())
+			local Logistics = CF.GetLogisticAvailable(aiBrain)
+			for _,_unit in Units do
+				LOG(templatename, repr(UnitGeneralTemplates))
+				if (Logistics - GetLogisticCost(_unit)) >= 0 and CF.CanEquip(_unit, templatename, UnitGeneralTemplates) then
+					MassCost = math.ceil(CF.GetTemplateCost(id, templatename, UnitGeneralTemplates, PrestigeClass) * bp.Economy.BuildCostMass) + math.ceil((100 + math.pow(bp.Economy.BuildCostMass, 0.7) * 30 * (math.pow(0.90, UnitLevel))) * CostModifier * PromotingCostMalus)
+					EnergyCost = math.ceil(CF.GetTemplateCost(id, templatename, UnitGeneralTemplates, PrestigeClass) * bp.Economy.BuildCostEnergy) + math.ceil((500 + math.pow(bp.Economy.BuildCostEnergy, 0.7) * 30 * (math.pow(0.90, UnitLevel))) * CostModifier * PromotingCostMalus)
+					Logistics = Logistics - GetLogisticCost(_unit)
+				end
+			end
 			if table.find(bp.Categories, 'COMMAND') then EnergyCost = math.ceil(EnergyCost * 0.01) end
 			DialogScreen.Template = 'Template'
 			local Tp = {} Tp.Line = {} Tp.Width = 390 Tp.OffSetX = 130 Tp.OffSetY = -40
@@ -2283,15 +2394,26 @@ function RefreshTemplates(id)
 		elseif UmUi['TemplateSlot_'..i].OnMouseEnter == true and DM.GetProperty(id, 'PrestigeClassPromoted') == 1 and AvailableTemplateList[i] then
 			local PrestigeClass = DM.GetProperty(id, 'PrestigeClass')
 			local templatename = AvailableTemplateList[i]
-			local MassCost = math.ceil(CF.GetTemplateCost(id, templatename, UnitGeneralTemplates) * bp.Economy.BuildCostMass)
-			local EnergyCost = math.ceil(CF.GetTemplateCost(id, templatename, UnitGeneralTemplates) * bp.Economy.BuildCostEnergy)
+			local MassCost = 0
+			local EnergyCost = 0
+			local Units = GetSelectedUnits()
+			local Totalunits = 0
+			for c,_unit in Units do
+				if DM.GetProperty(id, 'PrestigeClassPromoted') == 1 and CF.CanEquip(_unit, unit,  templatename, UnitGeneralTemplates) == true then
+					local idu = _unit:GetEntityId()
+					local bpu = _unit:GetBlueprint()
+					MassCost = MassCost + math.ceil(CF.GetTemplateCost(idu, templatename, UnitGeneralTemplates) * bpu.Economy.BuildCostMass)
+					EnergyCost = EnergyCost + math.ceil(CF.GetTemplateCost(idu, templatename, UnitGeneralTemplates) * bpu.Economy.BuildCostEnergy)
+					Totalunits = Totalunits + 1
+				end
+			end
 			if table.find(bp.Categories, 'COMMAND') then EnergyCost = math.ceil(EnergyCost * 0.01) end
 			DialogScreen.Template = 'Template'
 			local Tp = {} Tp.Line = {} Tp.Width = 390 Tp.OffSetX = 100 Tp.OffSetY = -40
 			table.insert(Tp.Line, {'[Left Click] to upgrade by using template'})
 			table.insert(Tp.Line, {'Template name : '..templatename, Color.YELLOW1})
-			table.insert(Tp.Line, {'  Mass Cost : '..MassCost, Color.CYBRAN})
-			table.insert(Tp.Line, {'  Energy Cost : '..EnergyCost, Color.CYBRAN})
+			table.insert(Tp.Line, {'  Mass Cost : '..MassCost..'  ('..Totalunits..' units)', Color.CYBRAN})
+			table.insert(Tp.Line, {'  Energy Cost : '..EnergyCost..'  ('..Totalunits..' units)', Color.CYBRAN})
 			table.insert(Tp.Line, {''})
 			table.insert(Tp.Line, {'Will equip with theses upgrades : ', Color.WHITE})
 			local Modifiers = UnitGeneralTemplates[UnitCatId][BaseClass][PrestigeClass][templatename]
@@ -2382,22 +2504,34 @@ function RefreshPowers(_id)
 					PowerBoxUI:SetTexture(power.IconPathReady)
 				end
 				PowerBoxUI.OnClickLeft = function(self)
-					local PowerName = PowerBoxUI.Name
-					local Power = CF.GetUnitPower(_id, PowerName)
-					local unit = GetUnitById(_id)
-					if Power.CanCast(unit) == true then
-						SimCallback	({Func= 'CallPower', Args = {id = _id, PowerName = PowerBoxUI.Name}})
+					local _PowerName = PowerBoxUI.Name
+					local Units = GetSelectedUnits()
+					for _,unit in Units do
+						local idu = unit:GetEntityId()
+						if DM.GetProperty(idu, 'PrestigeClassPromoted') == 1 or _PowerName == 'Engineers Consolidation' then
+							local Power = CF.GetUnitPower(idu, _PowerName)
+							if Power and Power.CanCast(unit) == true then
+								SimCallback	({Func= 'CallPower', Args = {id = idu, PowerName = _PowerName}})
+							end
+						end
 					end
 				end
 				PowerBoxUI.OnClickRight = function(self)
-					local PowerName = PowerBoxUI.Name
-					if PowerName == 'Engineers Consolidation' then
+					local _PowerName = PowerBoxUI.Name
+					local Units = GetSelectedUnits()
+					if _PowerName == 'Engineers Consolidation' then
 						EngineerConsolidationBonus_Dialog(_id)
-					else	
-						if DM.GetProperty(_id, PowerName..'_AutoCast') then
-							SimCallback	({Func= 'SetAutoCast', Args = {id = _id, PowerName = PowerBoxUI.Name, Value = nil}})
-						else
-							SimCallback	({Func= 'SetAutoCast', Args = {id = _id, PowerName = PowerBoxUI.Name, Value = 1}})
+					else
+						for _,unit in Units do
+							local idu = unit:GetEntityId()
+							if DM.GetProperty(idu, 'PrestigeClassPromoted') == 1 then
+								local Power = CF.GetUnitPower(_id, _PowerName)
+								if Power and DM.GetProperty(idu, _PowerName..'_AutoCast') then
+									SimCallback	({Func= 'SetAutoCast', Args = {id = idu, PowerName = _PowerName, Value = nil}})
+								elseif Power then
+									SimCallback	({Func= 'SetAutoCast', Args = {id = idu, PowerName = _PowerName, Value = 1}})
+								end
+							end
 						end
 					end
 				end
@@ -2457,7 +2591,7 @@ function RefreshStance(id)
 			if PowerModifier ~= 0 then
 				local Modifier = ''
 				if PowerModifier > 0 then Modifier = '+' COLOR =  Color.AEON else  COLOR =  Color.CYBRAN end
-				table.insert(Tp.Line, {'Attack Rating : '..Modifier..PowerModifier..' %', COLOR})
+				table.insert(Tp.Line, {'Accuracy : '..Modifier..PowerModifier..' %', COLOR})
 			end
 			PowerModifier = math.ceil(CF.GetStanceModifier(unit, 'Defense_Mod', _Stance) * 100) - 100
 			if PowerModifier ~= 0 then
@@ -2654,67 +2788,44 @@ function RefreshArmor(id)
 		end
 		LastTooltipTarget = 'ArmorUi'
 		EnhTtipTimer = 0
-		local Tp = {} Tp.Line = {} Tp.Width = 270 Tp.OffSetX = 180 Tp.OffSetY = - 20
-		local MaxH = math.ceil(unit:GetMaxHealth())
-		table.insert(Tp.Line, {'Current level : '..CF.GetUnitLevel(unit)})
-		local NextLevelHealth = MaxH + CF.GetGainPerLevel(unit, 'Health')
-		table.insert(Tp.Line, {'  Health Max (Next Level) : '..MaxH..' ('..NextLevelHealth..')', Color.AEON})
-			-- Capacitors Ui
-		local WeaponCapStanceMod = CF.GetStanceModifier(unit,  'StaminaRegen_Mod')
-		local Hull = DM.GetProperty(id, 'Hull', 25)
-		local Intelligence = DM.GetProperty(id, 'Intelligence', 25)
-		local wcregen =  string.format("%.1f", (0.8 * Hull / 30 * WeaponCapStanceMod))
-		local Currentwc = math.ceil(DM.GetProperty(id, 'Stamina'))
-		table.insert(Tp.Line, {'  Weapon Capacitor : '..Currentwc..' / '..DM.GetProperty(id,'Stamina_Max')..'  +'..wcregen..'/s', Color.ORANGE_LIGHT})
-		local PowerCapacitorRecoveryBuff =  1 + (DM.GetProperty(id, 'Buff_PowerCapacitorRecovery_ALL_Add', 0) / 100)
-		local pwregen =  string.format("%.1f", 2 * Intelligence / 25 * PowerCapacitorRecoveryBuff)
-		local Currentpc = math.ceil(DM.GetProperty(id, 'Capacitor'))
-		table.insert(Tp.Line, {'  Power Capacitor : '..Currentpc..' / '..DM.GetProperty(id, 'Capacitor_Max')..'  +'..pwregen..'/s', Color.UEF})
-		table.insert(Tp.Line, {''})
+		local Tp = {} Tp.Line = {} Tp.Width = 260 Tp.OffSetX = 180 Tp.OffSetY = - 20
 		-- Classes 
 		local BaseClass = DM.GetProperty(id, 'BaseClass')
 		table.insert(Tp.Line, {'Base Class : '..BaseClass})
 		if  DM.GetProperty(id, 'PrestigeClassPromoted') == 1 then
 			if BaseClass == 'Fighter' then
-				table.insert(Tp.Line, {'  Puissance + 5', Color.AEON})
-				table.insert(Tp.Line, {'  Hull + 5', Color.AEON})
-				table.insert(Tp.Line, {'  Intelligence - 10', Color.CYBRAN})
 				table.insert(Tp.Line, {'  Moving Speed + 15 %', Color.AEON})
 				table.insert(Tp.Line, {'  Vision Radius + 25 %', Color.AEON})
 			elseif BaseClass == 'Rogue' then
-				table.insert(Tp.Line, {'  Dexterity + 5', Color.AEON})
-				table.insert(Tp.Line, {'  Intelligence + 5', Color.AEON})
-				table.insert(Tp.Line, {'  Energy - 10', Color.CYBRAN})
+				-- table.insert(Tp.Line, {'  Dexterity + 5', Color.AEON})
+				-- table.insert(Tp.Line, {'  Intelligence + 5', Color.AEON})
+				-- table.insert(Tp.Line, {'  Energy - 10', Color.CYBRAN})
 				table.insert(Tp.Line, {'  Moving Speed + 30 %', Color.AEON})
 				table.insert(Tp.Line, {'  Vision Radius + 100 %', Color.AEON})
-				table.insert(Tp.Line, {''})
-				table.insert(Tp.Line, {'Passive powers :'})
+				-- table.insert(Tp.Line, {''})
+				-- table.insert(Tp.Line, {'Passive powers :'})
 
 				Tp.Width = 340
 			elseif BaseClass == 'Support' then
-				table.insert(Tp.Line, {'  Dexterity - 10', Color.CYBRAN})
-				table.insert(Tp.Line, {'  Hull + 5', Color.AEON})
-				table.insert(Tp.Line, {'  Energy + 5', Color.AEON})
+				-- table.insert(Tp.Line, {'  Dexterity - 10', Color.CYBRAN})
+				-- table.insert(Tp.Line, {'  Hull + 5', Color.AEON})
+				-- table.insert(Tp.Line, {'  Energy + 5', Color.AEON})
 				table.insert(Tp.Line, {'  Moving Speed + 15 %', Color.AEON})
 				table.insert(Tp.Line, {'  Vision Radius + 25 %', Color.AEON})
-				table.insert(Tp.Line, {''})
-				table.insert(Tp.Line, {'Passive powers :'})
-				table.insert(Tp.Line, {'  10 s immobility grants overtime insta-repair', Color.AEON})
-				table.insert(Tp.Line, {'    unit must not fire, take damages or move', Color.AEON})
-				table.insert(Tp.Line, {'    Capacitor must be over 50%',  Color.AEON})
-				table.insert(Tp.Line, {'    use capacitor power',  Color.AEON})
+				-- table.insert(Tp.Line, {''})
+				-- table.insert(Tp.Line, {'Passive powers :'})
 				-- Energy storage
 				local Power = math.ceil(math.pow(bp.Economy.BuildCostMass, 0.9)) 
-				local energysto = Power * 2000
+				local energysto = Power * 200
 				table.insert(Tp.Line, {'  Energy Storage + '..energysto,  Color.AEON})
 				Tp.Width = 310
 			elseif BaseClass == 'Ardent' then
 				local army = unit:GetArmy()
 				local HealthAbsorp = math.ceil(CF.GetHealthAbsorptionUi(id) + DM.GetProperty(army, 'AI_'..'Ardent'..'_'..CF.GetUnitLayerTypeHero(unit), 0))
 				local EnergyAbso = math.ceil(CF.GetEnergyAbsorptionUi(id))
-				table.insert(Tp.Line, {'  Puissance - 10', Color.CYBRAN})
-				table.insert(Tp.Line, {'  Intelligence + 10', Color.AEON})
-				table.insert(Tp.Line, {'  Energy + 5', Color.AEON})
+				-- table.insert(Tp.Line, {'  Puissance - 10', Color.CYBRAN})
+				-- table.insert(Tp.Line, {'  Intelligence + 10', Color.AEON})
+				-- table.insert(Tp.Line, {'  Energy + 5', Color.AEON})
 				table.insert(Tp.Line, {'  Moving Speed + 15 %', Color.AEON})
 				table.insert(Tp.Line, {'  Vision Radius + 35 %', Color.AEON})
 				table.insert(Tp.Line, {''})
@@ -2725,37 +2836,33 @@ function RefreshArmor(id)
 			end
 		else
 			if BaseClass == 'Fighter' then
-				table.insert(Tp.Line, {'  Puissance + 5', Color.AEON})
-				table.insert(Tp.Line, {'  Hull + 5', Color.AEON})
-				table.insert(Tp.Line, {'  Intelligence - 10', Color.CYBRAN})
+				-- table.insert(Tp.Line, {'  Puissance + 5', Color.AEON})
+				-- table.insert(Tp.Line, {'  Hull + 5', Color.AEON})
+				-- table.insert(Tp.Line, {'  Intelligence - 10', Color.CYBRAN})
 			elseif BaseClass == 'Rogue' then
-				table.insert(Tp.Line, {'  Dexterity + 5', Color.AEON})
-				table.insert(Tp.Line, {'  Intelligence + 5', Color.AEON})
-				table.insert(Tp.Line, {'  Energy - 10', Color.CYBRAN})
+				-- table.insert(Tp.Line, {'  Dexterity + 5', Color.AEON})
+				-- table.insert(Tp.Line, {'  Intelligence + 5', Color.AEON})
+				-- table.insert(Tp.Line, {'  Energy - 10', Color.CYBRAN})
 				table.insert(Tp.Line, {'  Moving Speed + 15 %', Color.AEON})
 				table.insert(Tp.Line, {'  Vision Radius + 25 %', Color.AEON})
-				table.insert(Tp.Line, {''})
-				table.insert(Tp.Line, {'Passive powers :'})
-				table.insert(Tp.Line, {'    Radar stealth', Color.AEON})
+				-- table.insert(Tp.Line, {''})
+				-- table.insert(Tp.Line, {'Passive powers :'})
+				-- table.insert(Tp.Line, {'    Radar stealth', Color.AEON})
 				Tp.Width = 340
 			elseif BaseClass == 'Support' then
-				table.insert(Tp.Line, {'  Dexterity - 10', Color.CYBRAN})
-				table.insert(Tp.Line, {'  Hull + 5', Color.AEON})
-				table.insert(Tp.Line, {'  Energy + 5', Color.AEON})
-				table.insert(Tp.Line, {''})
-				table.insert(Tp.Line, {'Passive powers :'})
-				table.insert(Tp.Line, {'  10 s immobility grants insta-repair', Color.AEON})
-				table.insert(Tp.Line, {'    unit must not fire, take damages or move', Color.AEON})
-				table.insert(Tp.Line, {'    Capacitor must be over 50%',  Color.AEON})
-				table.insert(Tp.Line, {'    use capacitor power',  Color.AEON})
+				-- table.insert(Tp.Line, {'  Dexterity - 10', Color.CYBRAN})
+				-- table.insert(Tp.Line, {'  Hull + 5', Color.AEON})
+				-- table.insert(Tp.Line, {'  Energy + 5', Color.AEON})
+				-- table.insert(Tp.Line, {''})
+				-- table.insert(Tp.Line, {'Passive powers :'})
 				Tp.Width = 310
 			elseif BaseClass == 'Ardent' then
 				local army = unit:GetArmy()
 				local HealthAbsorp = math.ceil(CF.GetHealthAbsorptionUi(id) + DM.GetProperty(army, 'AI_'..'Ardent'..'_'..CF.GetUnitLayerTypeHero(unit), 0))
 				local EnergyAbso = math.ceil(CF.GetEnergyAbsorptionUi(id))
-				table.insert(Tp.Line, {'  Puissance - 10', Color.CYBRAN})
-				table.insert(Tp.Line, {'  Intelligence + 10', Color.AEON})
-				table.insert(Tp.Line, {'  Energy + 5', Color.AEON})
+				-- table.insert(Tp.Line, {'  Puissance - 10', Color.CYBRAN})
+				-- table.insert(Tp.Line, {'  Intelligence + 10', Color.AEON})
+				-- table.insert(Tp.Line, {'  Energy + 5', Color.AEON})
 				table.insert(Tp.Line, {''})
 				table.insert(Tp.Line, {'Passive powers :'})
 				table.insert(Tp.Line, {'  '..HealthAbsorp..' % damages converted to health', Color.AEON})
@@ -2779,35 +2886,10 @@ function RefreshArmor(id)
 		else
 			table.insert(Tp.Line, {type..' : not enough XP for training', Color.GREY_LIGHT})
 		end
-		table.insert(Tp.Line, {''})
 		SetEnhancedTooltip(UmUi['BaseClass'], Tp, '', '')
 	end
 end
 
-function RefreshShield(id, PropertyName)
-	-- StaticText = UmUi['Text_1' .. PropertyName]
-	-- StaticText2 = UmUi['Text_2' .. PropertyName]
-	-- local unit = GetUnitById(id)
-	-- local Classid = unit:GetUnitId()
-	-- local army = unit:GetArmy()
-	-- local bp = unit:GetBlueprint()
-	-- local ShieldBonusTech = 0
-	-- SetProgressBar(unit,'Shield', 0)
-	-- local ShieldHealth = math.floor(DM.GetProperty(id, 'MyShieldMaxHealth', 0))
-	-- local bpShield = bp.Defense.Shield
-	-- if (bpShield ~= nil and bpShield.ShieldSize ~= 0) or unit:GetShieldRatio() > 0 then
-		-- local ShieldRatio = unit:GetShieldRatio()
-		-- ShieldHealth = math.floor(ShieldHealth * ShieldRatio)
-		-- if ShieldRatio >= 0.70 then StaticText:SetColor('ff70ff70')
-		-- elseif ShieldRatio >= 0.33 then StaticText:SetColor('ffffffaa')
-		-- else  StaticText:SetColor('ffff7070')
-		-- end	
-		-- ShieldBonusTech = math.floor(ShieldBonusTech)
-		-- StaticText:SetText(ShieldHealth)
-	-- else
-		-- ShieldBonusTech = math.floor(ShieldBonusTech)
-	-- end
-end
 
 function SetEnhancedTooltip(targetUi, DescriptionTtip, PowerName, UnitId)
 	UmUi['EnhancedTooltipUi'].Width:Set(DescriptionTtip.Width)
@@ -2837,7 +2919,7 @@ function SetEnhancedTooltip(targetUi, DescriptionTtip, PowerName, UnitId)
 			UmUi['EnhancedTooltipUi'..i..'Box']:Hide()
 		end
 	end
-	UmUi['EnhancedTooltipUi'].Height:Set(c * 17 + 18)
+	UmUi['EnhancedTooltipUi'].Height:Set(c * 14 + 18)
 	LayoutHelpers.AtLeftTopIn(UmUi['EnhancedTooltipUi'], targetUi, DescriptionTtip.OffSetX or 0, - (c * 15 + 30) + (DescriptionTtip.OffSetY or 0))
 	UmUi['EnhancedTooltipUi']:Show()
 end

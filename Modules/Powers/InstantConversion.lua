@@ -30,7 +30,7 @@ function Description(unit) -- Mandatory function
 	local ConversionRate = 0.006 * (1 + Int/75) * math.pow(Techlevel, 0.3) * (1 + math.pow(bp.Economy.BuildCostMass, 0.35) / 100)
 	local Massconverted = math.floor(EnergyAmount * ConversionRate)
 	local Rate = math.ceil(1/ConversionRate)
-	local Tp = {} Tp.Line = {} Tp.Width = 285 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 230 Tp.OffSetY = -70
 	table.insert(Tp.Line, {'Instant Power to Mass Conversion'})
 	table.insert(Tp.Line, {'Convert up to '..EnergyAmount..' energy in '..string.format("%.1f",Massconverted)..' mass', Color.AEON})
 	table.insert(Tp.Line, {'Conversion Rate : 1 mass for '..Rate.. ' energy', Color.GREY_LIGHT})

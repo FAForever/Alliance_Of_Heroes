@@ -29,23 +29,14 @@ end
 function Description(unit) -- Mandatory function
 	local id = unit:GetEntityId()
 	local bp = unit:GetBlueprint()
-	local ExperimentalMod = 1
-	if table.find(bp.Categories, 'EXPERIMENTAL') then
-		ExperimentalMod = 0.5
-		if table.find(bp.Categories, 'AIR') or table.find(bp.Categories, 'HIGHALTAIR') then
-			ExperimentalMod = 0.25
-		end
-	end
 	local Prefix = ' Hero'
 	local BaseClass = DM.GetProperty(id,'BaseClass','Fighter')
 	local PrestigeClass = DM.GetProperty(id,'PrestigeClass','Dreadnought')
 	local RankLevel = ((BCMod[BaseClass] or 0.25) +( PCMod[PrestigeClass] or 0.25)) / 2
-	local Tp = {} Tp.Line = {} Tp.Width = 240 Tp.OffSetY = -35
-	local Int = DM.GetProperty(id, 'Intelligence')
-	local ShieldTech = DM.GetProperty(id, 'Tech_ShieldPower', 0) + 1
-	local PowerModifier = CF.GetStanceModifier(unit, 'PowerStrengh_Mod') + (DM.GetProperty(id, 'Buff_PowerDamage_ALL_Add', 0) / 100)
-	local Power = math.ceil(math.pow(bp.Economy.BuildCostMass, 0.7) * (1 + Int/50) * PowerModifier * RankLevel * ExperimentalMod ) * 100 * ShieldTech
-	local RegenRate = math.max(math.ceil(Power / 250 * RankLevel), 20)
+	local Tp = {} Tp.Line = {} Tp.Width = 200 Tp.OffSetY = -70
+	local Power = GetShieldPower(unit)
+	local RegenRateTech = DM.GetProperty(id, 'Tech_Shield_RegenRate_Bonus', 0)
+	local RegenRate = math.max(math.ceil(Power / 250 * RankLevel), 20) + RegenRateTech
 	local RegenStarttime = math.max(math.ceil(1 / RankLevel), 1)
 	local Rechargetime =  math.max(math.ceil(10 / RankLevel), 10)
 	table.insert(Tp.Line, {PrestigeClass..Prefix..' Shield'})
@@ -78,7 +69,38 @@ function CanCast(unit) -- Mandatory function
 end
 
 function GetLevel(unit)
+
 end
+
+function GetShieldPower(unit, refresh)
+	local id = unit:GetEntityId()
+	local bp = unit:GetBlueprint()
+	local ExperimentalMod = 1
+	if table.find(bp.Categories, 'EXPERIMENTAL') then
+		ExperimentalMod = 0.5
+		if table.find(bp.Categories, 'AIR') or table.find(bp.Categories, 'HIGHALTAIR') then
+			ExperimentalMod = 0.25
+		end
+	end
+	local BaseClass = DM.GetProperty(id,'BaseClass','Fighter')
+	local PrestigeClass = DM.GetProperty(id,'PrestigeClass','Dreadnought')
+	local RankLevel = ((BCMod[BaseClass] or 0.25) +( PCMod[PrestigeClass] or 0.25)) / 2
+	local Int = DM.GetProperty(id, 'Intelligence')
+	local Tech_Shield_MaxHealth_Bonus =  DM.GetProperty(id, 'Tech_Shield_MaxHealth_Bonus', 0) + 1
+	local PowerModifier = CF.GetStanceModifier(unit, 'PowerStrengh_Mod') + (DM.GetProperty(id, 'Buff_PowerDamage_ALL_Add', 0) / 100)
+	local Power = math.floor(math.pow(bp.Economy.BuildCostMass, 0.7) * (1 + Int/50) * PowerModifier * RankLevel * ExperimentalMod * Tech_Shield_MaxHealth_Bonus * 100)
+	if refresh == true then
+		DM.SetProperty(id, 'Power_Shield_MaxHealth', Power)
+		local RegenRate = math.max(math.ceil(Power / 250 * RankLevel), 20)
+		local RegenRateTech = DM.GetProperty(id, 'Tech_Shield_RegenRate_Bonus', 0)
+		DM.SetProperty(id, 'Power_Shield_RegenRate', RegenRate + RegenRateTech)
+	end
+	return Power
+end
+
+
+
+
 
 
 function GetPowerCost(unit) -- Mandatory function
@@ -92,22 +114,11 @@ end
 function OnCast(unit, TempEntity, Option) -- Mandatory function. This function is called from ui immediately when the power icon is clicked on
 	local soundfx = Sound({Bank = 'UEADestroy', Cue = 'UEA_Destroy_Air_Killed'})
 	unit:PlaySound(soundfx)
-	local bp = unit:GetBlueprint()
 	local id = unit:GetEntityId()
-	local ExperimentalMod = 1
-	if table.find(bp.Categories, 'EXPERIMENTAL') then
-		ExperimentalMod = 0.5
-		if table.find(bp.Categories, 'AIR') or table.find(bp.Categories, 'HIGHALTAIR') then
-			ExperimentalMod = 0.25
-		end
-	end
-	local Int = DM.GetProperty(id, 'Intelligence')
-	local ShieldTech = DM.GetProperty(id, 'Tech_ShieldPower', 0) + 1
 	local BaseClass = DM.GetProperty(id,'BaseClass','Fighter')
 	local PrestigeClass = DM.GetProperty(id,'PrestigeClass','Dreadnought')
 	local RankLevel = ((BCMod[BaseClass] or 0.25) +( PCMod[PrestigeClass] or 0.25)) / 2
-	local PowerModifier = CF.GetStanceModifier(unit, 'PowerStrengh_Mod') + (DM.GetProperty(id, 'Buff_PowerDamage_ALL_Add', 0) / 100)
-	local Power = math.ceil(math.pow(bp.Economy.BuildCostMass, 0.7) * (1 + Int/50) * PowerModifier * RankLevel * ExperimentalMod ) * 100 * ShieldTech
+	local Power = GetShieldPower(unit, true)
 	local RegenRate = math.max(math.ceil(Power / 250 * RankLevel), 20)
 	local RegenStarttime = math.max(math.ceil(1 / RankLevel), 1)
 	local Rechargetime =  math.max(math.ceil(30 / RankLevel), 30)
@@ -122,17 +133,14 @@ function OnCast(unit, TempEntity, Option) -- Mandatory function. This function i
 		MeshZ = '/effects/entities/Shield01/Shield01z_mesh',
 		RegenAssistMult = 60,
 		ShieldEnergyDrainRechargeTime = 60,
-		ShieldMaxHealth = Power,
+		ShieldMaxHealth = 0,
 		ShieldRechargeTime = Rechargetime,
-		ShieldRegenRate = RegenRate,
+		ShieldRegenRate = 0,
 		ShieldRegenStartTime = RegenStarttime,
 		ShieldSize = math.max(2, vol * 2.4),
 		ShieldSpillOverDamageMod = 0,
 		ShieldVerticalOffset = 0,
 	}
-	DM.SetProperty(id, 'Power_Shield_MaxHealth', Power)
-	DM.SetProperty(id, 'Power_Shield_RegenRate', RegenRate)
-		
 	unit:CreateShield(PersonalBubble)
 	CreateLightParticleIntel(unit, -1, unit:GetArmy(), 3, 100, 'glow_02', 'ramp_blue_01' )
 	local time = math.floor(GetGameTimeSeconds())

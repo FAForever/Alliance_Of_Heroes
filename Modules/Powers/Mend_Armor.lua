@@ -28,7 +28,7 @@ function Description(unit) -- Mandatory function
 	local HealthMin = math.floor(Health * 0.75)
 	local HealthMax = math.floor(Health * 1.25)
 	local AOE = CF.GetUnitTech(unit) * 15 + 5
-	local Tp = {} Tp.Line = {} Tp.Width = 290 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 240 Tp.OffSetY = -70
 	local Techlevel = CF.GetUnitTech(unit)
 	table.insert(Tp.Line, {'Mend Armor'})
 	table.insert(Tp.Line, {'Personal Repair', Color.WHITE})

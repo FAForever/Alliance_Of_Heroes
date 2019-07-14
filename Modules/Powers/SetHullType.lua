@@ -241,7 +241,7 @@ end
 
 function Description(unit) -- Mandatory function
 	local id = unit:GetEntityId()
-	local Tp = {} Tp.Line = {} Tp.Width = 240 Tp.OffSetY = -40
+	local Tp = {} Tp.Line = {} Tp.Width = 240 Tp.OffSetY = -70
 	local CurrentHull = DM.GetProperty(id,'Hull_Type', 'Terran')
 	local SelectionColor = Color.GREY_LIGHT
 	table.insert(Tp.Line, {Name(unit)})

@@ -69,21 +69,30 @@ end
 
 function GetLogisticAvailable(ArmyBrain)
 	local HeroesList = GetPlayerHeroesList(ArmyBrain)
-	local Logistics = 24
+	local Logistics = 100
 	for j, hero in HeroesList do
-		local bp = hero:GetBlueprint() 
-		local id = hero:GetEntityId()
-		local level = GetUnitLevel(hero)
-		local LogisticCostMod = 2
-		if table.find(bp.Categories, 'STRUCTURE') then LogisticCostMod = 1 end
-		if level >= 15 then LogisticCostMod = 0.5 end
-		if level >= 30 then LogisticCostMod = 0 end
-		if table.find(bp.Categories, 'COMMAND') then LogisticCostMod = 0 end
-		local unittech = GetUnitTech(hero)
-		Logistics = Logistics - math.ceil((unittech * LogisticCostMod))
+		Logistics = Logistics - GetLogisticCost(hero)
 	end
 	return Logistics
 end
+
+function GetLogisticCost(unit)
+	local bp = unit:GetBlueprint() 
+	local level = GetUnitLevel(unit)
+	local Tech = GetUnitTech(unit)
+	local LogisticCostMod = 2
+	if table.find(bp.Categories, 'STRUCTURE') then LogisticCostMod = 1 end
+	if level >= 10 then LogisticCostMod = 0.5 end
+	if level >= 20 then LogisticCostMod = 0 end
+	if level >= 30 then LogisticCostMod = -0.5 * Tech end
+	if level >= 40 then LogisticCostMod = -1 * Tech end
+	if level >= 50 then LogisticCostMod = -1.5 * Tech end
+	if level >= 60 then LogisticCostMod = -2 * Tech end
+	if level >= 70 then LogisticCostMod = -2.5 * Tech end
+	if table.find(bp.Categories, 'COMMAND') then LogisticCostMod = 0 end
+	return math.ceil(math.pow(bp.Economy.BuildCostMass / 10, 0.6))
+end
+
 
 
 function SortHeroesListToUi(HeroList, Data)
@@ -129,6 +138,7 @@ function GetRankInHeroList(id, data)
 end
 
 function SortDualHeroList()
+	local PointsSystem = {25, 18, 15, 12, 10, 8, 6, 4, 2, 1}
 	local PointsSystem = {25, 18, 15, 12, 10, 8, 6, 4, 2, 1}
 	local HeroList = GetAllHeroesList()
 	local HeroListMod = {}
@@ -219,12 +229,12 @@ function GetGainPerLevel(unit, category)
 	local BaseClass = DM.GetProperty(id,'BaseClass', 'Fighter')
 	local PrestigeClass = DM.GetProperty(id,'PrestigeClass') or 'NeedPromote'
 	if category == 'Health' then
-		local Base = math.pow(bp.Defense.MaxHealth, 0.6)
+		local Base = math.pow(bp.Defense.MaxHealth, 0.8)
 		local Power =  math.pow(bp.Economy.BuildCostMass, 0.6)
 		local Hull =  DM.GetProperty(id,'Hull')
 		local ClassModifier =  BCbp[BaseClass]['HealthGainModifier']
 		local PrestigeClassMod = PC[PrestigeClass]['MaxHealthMod'] or 1
-		return math.floor(((Base + Power) * (1 + Hull / 50) * 0.2 * ClassModifier) * 15 * PrestigeClassMod)
+		return math.floor((bp.Defense.MaxHealth * 0.05) * (1 + Hull / 50 + ClassModifier + PrestigeClassMod))
 	end
 	if category == 'Weapon Capacitor' then
 		local ClassModifier =  BCbp[BaseClass]['StaminaGainModifier']
@@ -463,7 +473,7 @@ function GetUnitRegen(unit)
 	local TechLevel = GetUnitTech(unit) or 1
 	local army = unit:GetArmy()
 	local HallofFameBonusRegen = Calculate_HallofFameBonus(DM.GetProperty(army, 'AI_'..'Support'..'_'..GetUnitLayerTypeHero(unit), 0), 'Support') * TechLevel
-	local Regen = math.ceil(math.floor(DM.GetProperty(id, 'Hull')) / 75 * (level - 1) * 0.1 *(math.floor(math.pow(bp.Economy.BuildCostMass, 0.4)))) + DM.GetProperty(id,'Upgrade_Armor_Regeneration Increase', 0) + HallofFameBonusRegen
+	local Regen = (DM.GetProperty(id, 'Hull') / 25) * TechLevel * (level - 1) + DM.GetProperty(id,'Upgrade_Armor_Regeneration Increase', 0) + HallofFameBonusRegen
 	return Regen
 end
 
@@ -580,7 +590,7 @@ function GetArmorAbsorption(id, WeaponCategory, ArmorPiercing, DamageType)
 	local ModifiedWeaponCategory = WeaponCategory
 	local ArmorType = {'Light Armor', 'Medium Armor', 'Heavy Armor'}
 	local BaseArmor = AoHBuff.GetBuffValue(unit, 'Armor', 'ALL')
-	local TechArmor = DM.GetProperty(id, 'Tech_Armor', 0)
+	local TechArmor = DM.GetProperty(id, 'TechArmor', 0)
 	if DamageType == 'Plasma' then
 		local BaseClass = DM.GetProperty(id, 'BaseClass') == 'Ardent'
 		local Stance = DM.GetProperty(id,'StanceState', 'Normal')
@@ -593,10 +603,10 @@ function GetArmorAbsorption(id, WeaponCategory, ArmorPiercing, DamageType)
 		end
 	end
 	if not table.find(WeaponCategoryList, ModifiedWeaponCategory) then return  math.min(math.floor(100 * (1 - math.pow(0.9, BaseArmor/10))), 75) end
-	local SpecialArmor = BaseArmor * (1 + TechArmor/100)
+	local SpecialArmor = BaseArmor
 	local TechSpe = DM.GetProperty(id, 'Tech_Armor_'..ModifiedWeaponCategory, 0)
 	local UpgrSpe = DM.GetProperty(id, 'Upgrade_Armor_Armor for '..ModifiedWeaponCategory, 0)
-	SpecialArmor = SpecialArmor * (1 + (TechSpe + UpgrSpe)/100)
+	SpecialArmor = SpecialArmor * (1 + (TechSpe + UpgrSpe)/100) + TechArmor
 	SpecialArmor = math.max(0, SpecialArmor + AoHBuff.GetBuffValue(unit, 'Armor', ModifiedWeaponCategory) - (ArmorPiercing or 0))
 	return math.min(math.floor(100 * (1 - math.pow(0.9, SpecialArmor/10))), 75)
 end
@@ -608,7 +618,7 @@ function GetArmorAbsorptionUi(id, WeaponCategory, ArmorPiercing, DamageType)
 	local ModifiedWeaponCategory = WeaponCategory
 	local ArmorType = {'Light Armor', 'Medium Armor', 'Heavy Armor'}
 	local BaseArmor =  DM.GetProperty(id, 'Buff_Armor_ALL_Add', 0)
-	local TechArmor = DM.GetProperty(id, 'Tech_Armor', 0)
+	local TechArmor = DM.GetProperty(id, 'TechArmor', 0)
 	if DamageType == 'Plasma' then
 		local BaseClass = DM.GetProperty(id, 'BaseClass') == 'Ardent'
 		local Stance = DM.GetProperty(id,'StanceState', 'Normal')
@@ -621,16 +631,20 @@ function GetArmorAbsorptionUi(id, WeaponCategory, ArmorPiercing, DamageType)
 		end
 	end
 	if not table.find(WeaponCategoryList, ModifiedWeaponCategory) then return math.min(math.floor(100 * (1 - math.pow(0.9, BaseArmor/10))), 75) end
-	local SpecialArmor = BaseArmor * (1 + TechArmor/100)
+	local SpecialArmor = BaseArmor 
 	local TechSpe = DM.GetProperty(id, 'Tech_Armor_'..ModifiedWeaponCategory, 0)
 	local UpgrSpe = DM.GetProperty(id, 'Upgrade_Armor_Armor for '..ModifiedWeaponCategory, 0)
-	SpecialArmor = SpecialArmor * (1 + (TechSpe + UpgrSpe)/100)
+	SpecialArmor = SpecialArmor * (1 + (TechSpe + UpgrSpe)/100) + TechArmor
 	SpecialArmor = math.max(0, SpecialArmor + AoHBuff.GetBuffValue(unit, 'Armor', ModifiedWeaponCategory) - (ArmorPiercing or 0))
 	return math.min(math.floor(100 * (1 - math.pow(0.9, SpecialArmor/10))), 75)
 end
 
 function GetDefenseRating(unit, _stance)
 	local id = unit:GetEntityId()
+	local Tech_Defense = 0
+	if DM.GetProperty(id, 'Tech_Defense') then
+		Tech_Defense = DM.GetProperty(id, 'Tech_Defense', 0)
+	end
 	if DM.GetProperty(id, 'PrestigeClassPromoted') == 1 then -- turning off vanilla units calculations for performance optimizations
 		local bp = unit:GetBlueprint()
 		local Stance = DM.GetProperty(id,'StanceState', 'Normal')
@@ -644,7 +658,6 @@ function GetDefenseRating(unit, _stance)
 		local HeavyArmor = DM.GetProperty(id, 'Upgrade_Armor_Heavy Armor', 0)
 		local Dexmod = 1
 		local DefenseArmor = 0
-		local DefenseTech = DM.GetProperty(id, 'Tech_Defense', 0)
 		if LightArmor > 0 then Dexmod = 0.95 DefenseArmor = (75 + DM.GetProperty(id, 'Light Armor Mastery', 0) * 1.5) *  (math.min(LightArmor, 15) / 15) end
 		if MediumArmor > 0 then Dexmod = 0.75 DefenseArmor = (75 + DM.GetProperty(id, 'Medium Armor Mastery', 0) * 1.5) *  (math.min(MediumArmor, 30) / 30) end
 		if HeavyArmor > 0 then Dexmod = 0.55 DefenseArmor = (75 + DM.GetProperty(id, 'Heavy Armor Mastery', 0) * 1.5) *  (math.min(HeavyArmor, 45) / 45) end
@@ -657,21 +670,21 @@ function GetDefenseRating(unit, _stance)
 		if table.find(bp.Categories, 'STRUCTURE') then MovPenality = 0.25 end
 		if table.find(bp.Categories, 'EXPERIMENTAL') then MovPenality = 0 end
 		MovPenality = MovPenality / math.pow(UnitTech or 1, 0.3)
-		return math.ceil((DefenseDexterity * Dexmod + Defensebuff + DefenseArmor + DefenseTech) * DefenseMod * MovPenality)
+		return math.ceil((DefenseDexterity * Dexmod + Defensebuff + DefenseArmor + Tech_Defense) * DefenseMod * MovPenality)
 	else
 		local level = GetUnitLevel(unit) or 1
-		return math.ceil(25 + level * 5)
+		return math.ceil(25 + Tech_Defense + level * 5)
 	end
 end
 
-function GetAttackRating(unit)
+function GetAttackRating(unit, _stance)
 	local id = unit:GetEntityId()
 	if unit and DM.GetProperty(id, 'PrestigeClassPromoted') == 1 then -- turning off vanilla units calculations for performance optimizations
 		local Stance = DM.GetProperty(id,'StanceState', 'Normal')
 		local BaseClass = DM.GetProperty(id,'BaseClass', 'Fighter')
 		local BpStance = BCbp[BaseClass]['Stance']
 		local Attackbuff =  DM.GetProperty(id, 'Buff_Attack_ALL_Add', 0)
-		local AttackMod = GetStanceModifier(unit, 'Attack_Mod')
+		local AttackMod = GetStanceModifier(unit, 'Attack_Mod', _stance)
 		local AttackAdd = BpStance[Stance]['Attack_Add'] or BpStance['Normal']['Attack_Add'] or 150
 		local AttackDexterity = math.ceil(DM.GetProperty(id, 'Dexterity', 0) * 3)
 		local AttackTech = DM.GetProperty(id, 'Tech_Improved Aiming Cumputer', 0)
@@ -745,8 +758,9 @@ function GetUnitPowers(id)
 end
 
 function GetUnitPower(id, PowerName)
+	local unit = GetUnitById(id)
 	for _, Power in Powers do
-		if Power.Name() == PowerName then
+		if Power.Name() == PowerName and Power.IsAvailable(unit) == true then
 			return Power
 		end
 	end
@@ -954,7 +968,6 @@ end
 
 function GetTemplateCost(id, TemplateName, TemplateTable, _PrestigeClass)
 	local unit = GetUnitById(id)
-	local bp = unit:GetBlueprint()
 	local UnitCatId = unit:GetUnitId()
 	local BaseClass = DM.GetProperty(id, 'BaseClass', 'Fighter')
 	local PrestigeClass = DM.GetProperty(id, 'PrestigeClass')
@@ -976,6 +989,40 @@ function GetTemplateCost(id, TemplateName, TemplateTable, _PrestigeClass)
 	end
 	return Cost
 end
+
+function CanEquip(unit, _unit, TemplateName, TemplateTable)
+	local MaxSpace = GetAvailableMaxSpace(unit)
+	local UnitCatId = unit:GetUnitId()
+	local _UnitCatId = _unit:GetUnitId()
+	local id = unit:GetEntityId()
+	if DM.GetProperty(id, 'PrestigeClassPromoted') == 1 then
+		local _id = _unit:GetEntityId()
+		local BaseClass = DM.GetProperty(_id, 'BaseClass')
+		local PrestigeClass = DM.GetProperty(_id, 'PrestigeClass')
+		
+		local _Space = 0
+		for _,modifier in ArmorModifiers.RefView do
+			if TemplateTable[_UnitCatId][BaseClass][PrestigeClass][TemplateName]['Upgrade_Armor_'..modifier..'_Level']  then
+				if ArmorModifiers.Modifiers[ArmorModifiers.GetInternalKey(modifier)].IsAvailable(id) == false then return false end
+				local modifierlevel = TemplateTable[_UnitCatId][BaseClass][PrestigeClass][TemplateName]['Upgrade_Armor_'..modifier..'_Level'] 
+				_Space = _Space + ArmorModifiers.Modifiers[ArmorModifiers.GetInternalKey(modifier)].Space * modifierlevel
+			end
+		end
+		for _,modifier in WeaponModifiers.RefView do
+			for WeaponIndex = 1, 30 do
+				if TemplateTable[_UnitCatId][BaseClass][PrestigeClass][TemplateName]['Upgrade_Weapon_'..WeaponIndex..'_'..modifier..'_Level'] then
+					if WeaponModifiers.Modifiers[WeaponModifiers.GetInternalKey(modifier)].IsAvailable(id) == false then return false end
+					local modifierlevel = TemplateTable[_UnitCatId][BaseClass][PrestigeClass][TemplateName]['Upgrade_Weapon_'..WeaponIndex..'_'..modifier..'_Level'] 
+					_Space = _Space + WeaponModifiers.Modifiers[WeaponModifiers.GetInternalKey(modifier)].Space * modifierlevel
+				end
+			end
+		end
+		return (_Space <= MaxSpace)
+	else
+		return false
+	end
+end
+
 
 function AddTemplate(TemplatesBp, UnitGeneralTemplates)
 	for _,model in TemplatesBp.Models do

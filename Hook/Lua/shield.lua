@@ -4,6 +4,7 @@ local CF = import(ModPath..'Modules/Calculate_Formula.lua')
 local AoHBuff = import(ModPath..'Modules/AoHBuff.lua')
 local Proj = import(ModPath..'Modules/ProjectilesId.lua')
 local BCbp = import(ModPath..'Modules/ClassDefinitions.lua').BaseClassBlueprint
+local LesserShield = import(ModPath..'Modules/Powers/LesserShield.lua')
 
 local OldShield = Shield
 Shield = Class(OldShield, Entity) {
@@ -12,12 +13,20 @@ Shield = Class(OldShield, Entity) {
 	OnCreate = function(self, spec)
 		-- AOH Custom shield data
 		-- modding specs
-		local Tech_ShieldPower = DM.GetProperty(spec.Owner.EntityId, 'Tech_ShieldPower', 0)
 		local Power_Shield_MaxHealth = DM.GetProperty(spec.Owner.EntityId, 'Power_Shield_MaxHealth', 0)
 		local Power_Shield_RegenRate = DM.GetProperty(spec.Owner.EntityId, 'Power_Shield_RegenRate', 0)
-		spec.ShieldMaxHealth = spec.ShieldMaxHealth * (1 +  Tech_ShieldPower)
 		if Power_Shield_MaxHealth > 0 then spec.ShieldMaxHealth = spec.ShieldMaxHealth + Power_Shield_MaxHealth end
 		if Power_Shield_RegenRate > 0 then spec.ShieldRegenRate = spec.ShieldRegenRate + Power_Shield_RegenRate end
+		if DM.GetProperty(spec.Owner.EntityId,'PrestigeClassPromoted') == 1 then
+			local Update = LesserShield.GetShieldPower(spec.Owner, true)
+		end
+		if DM.GetProperty(spec.Owner.EntityId,'PrestigeClassPromoted') != 1 then
+			local Tech_Shield_MaxHealth = DM.GetProperty(spec.Owner.EntityId, 'Tech_Shield_MaxHealth', 0)
+			local Tech_Shield_RegenRate = DM.GetProperty(spec.Owner.EntityId, 'Tech_Shield_RegenRate', 0)
+			if Tech_Shield_MaxHealth > 0 then spec.ShieldMaxHealth = spec.ShieldMaxHealth + Tech_Shield_MaxHealth end
+			if Tech_Shield_RegenRate > 0 then spec.ShieldRegenRate = spec.ShieldRegenRate + Tech_Shield_RegenRate end
+		end
+		-- LOG(spec.ShieldMaxHealth)
 		self.OldOnCreate(self, spec)
 	end,
 
@@ -38,6 +47,16 @@ Shield = Class(OldShield, Entity) {
 			end
 		end
 		AmountMod = amount
+		
+		-- EnergyDrain Feature
+		local Army = self:GetArmy()
+		if DM.GetProperty('Global'..Army, 'Energy Drain')	then
+			local DrainAmount =  DM.GetProperty('Global'..self:GetArmy(), 'Energy Drain')
+			DrainAmount = DrainAmount/100 * amount
+			self.Owner:GetAIBrain():GiveResource('Energy', DrainAmount)
+		end
+		
+		
 		-- Beam damage modifiers
 		-- Beams data are no refreshing at each hit, so we can't upload them in projectile data. So we need to mod them on target hit.
 		local Projectile = Proj.Projectiles['ProjId'..ProjectileId]
@@ -87,8 +106,9 @@ Shield = Class(OldShield, Entity) {
 
 OldPersonalBubble = PersonalBubble
 PersonalBubble = Class(OldPersonalBubble) {
+	OldOnCreate = PersonalBubble.OnCreate,
 	OnCreate = function(self, spec)
-        OldShield.OnCreate(self, spec)
+        self.OldOnCreate(self, spec)
 
         -- Store off useful values from the blueprint
         local OwnerBp = self.Owner:GetBlueprint()
@@ -112,8 +132,6 @@ PersonalShield = Class(OldPersonalShield) {
     OnCreate = function(self, spec)
 		-- AOH Custom shield data
 		-- modding specs
-		local Tech_ShieldPower = DM.GetProperty(spec.Owner.EntityId, 'Tech_ShieldPower', 0)
-		spec.ShieldMaxHealth = spec.ShieldMaxHealth * (1 +  Tech_ShieldPower)
 		self.OldOnCreate(self, spec)
     end,
 }

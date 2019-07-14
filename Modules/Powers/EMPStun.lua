@@ -25,7 +25,7 @@ end
 function Description(unit) -- Mandatory function
 	local id = unit:GetEntityId()
 	local bp = unit:GetBlueprint()
-	local Tp = {} Tp.Line = {} Tp.Width = 240 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 200 Tp.OffSetY = -70
 	local Techlevel = CF.GetUnitTech(unit)
 	table.insert(Tp.Line, {'Stun'})
 	table.insert(Tp.Line, {'AOE(40) Stun', Color.WHITE})

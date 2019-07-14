@@ -114,7 +114,8 @@ Unit = Class(OldUnit) {
 					DM.SetProperty(SupId, 'Hull'..'_TrainingWeight', 15)
 					DM.SetProperty(SupId, 'Energy'..'_TrainingWeight', 10)
 					unit:ExecutePower('LesserShield')
-					unit:AdjustHealth(unit, 2500)
+					unit:UpdateUnitData(0, 0)
+					unit:AdjustHealth(unit, 25000)
 				end
 			end
 		end
@@ -229,6 +230,17 @@ Unit = Class(OldUnit) {
 					DM.SetProperty(id, 'Military', true)
 					Unit.HasFired = false
 				end
+				-- TechBuff
+				local Army = Unit:GetArmy()
+				local Global = 'Global'..Army
+				for tech,_ in LandTech do
+					if DM.GetProperty(Global, 'Tech'..tech) then
+						if LandTech[tech].InstantUpgrade then
+							local level = DM.GetProperty(Global, 'Tech'..tech)
+							LandTech[tech].InstantUpgrade(Unit, level, 0)
+						end
+					end
+				end
 				-- Set promotion if there is just one	
 				-- AI HERO
 				local aiBrain = GetArmyBrain(Unit:GetArmy())				
@@ -280,7 +292,9 @@ Unit = Class(OldUnit) {
 									end
 								end
 								local TimeMod = Time / 2
-								local EcoRatio = math.min(MassIncome / MassIncomeAI, 10)
+								MassIncomeAI = math.max(MassIncomeAI, 1)
+								MassIncome = math.max(MassIncome, 1)
+								local EcoRatio = math.max(MassIncome / MassIncomeAI, 4)
 								BuffBlueprint {
 									Name = 'AIBoss',
 									DisplayName = 'AIBoss',
@@ -303,12 +317,12 @@ Unit = Class(OldUnit) {
 											Add = TimeMod / 50 * AIRmodifier * NAVALmodifier,
 										},
 										MoveMult = {
-											Mult = 0.5,
+											Mult = 0.66,
 										},
 									},
 								}
 								Buff.ApplyBuff(Unit, 'AIBoss')
-								local Level = math.max(math.ceil(EcoRatio + (Time-900) / 400, 1))
+								local Level = math.max(math.ceil(EcoRatio + (Time-900) / 600, 1))
 								local Name = 'Elite rank '
 								Unit:SetCustomName(Name..Level)
 								DM.SetProperty(id, 'Type', 'Elite')
@@ -388,10 +402,12 @@ Unit = Class(OldUnit) {
 				------------------------------------------------------------------------------------
 				if Projectile.WeaponNature == 'Beam' then
 					-- We need to record instigator data to stack all attack rating (since there is no collision detection for beam weapons)
+					local idi = instigator:GetEntityId()
 					local CurrentInstigatorsAttackRating = 0
 					local distfromtarget = DM.GetProperty(id, 'DistanceFromTarget'..'_Weapon_'..Projectile.WeaponIndex) or 0
-					local AttackRatingUpgrade = DM.GetProperty(id, 'Upgrade_Weapon_'..Projectile.WeaponIndex..'_Attack Rating') or 0
-					local AttackRating =  (CF.GetAttackRating(Unit) + AttackRatingUpgrade) * math.pow(0.75, distfromtarget / 10) * (1 + Projectile.DamageRadius * 2)
+					local AttackRatingUpgrade = DM.GetProperty(idi, 'Upgrade_Weapon_'..Projectile.WeaponIndex..'_Attack Rating') or 0
+					local ATR_Tech = DM.GetProperty(idi, 'Tech_Accuracy', 0)
+					local AttackRating =  (CF.GetAttackRating(instigator) + AttackRatingUpgrade + ATR_Tech) * math.pow(0.75, distfromtarget / 10) * (1 + Projectile.DamageRadius * 2)
 					Unit.InstigatorsData[Projectile.InstigatorId] = AttackRating
 					for ids, Atr in Unit.InstigatorsData do
 						if ids != Projectile.InstigatorId then
@@ -413,7 +429,6 @@ Unit = Class(OldUnit) {
 							local DamageRating =  CF.GetDamageRating(instigator) or 0
 							local DamageBuff = (AoHBuff.GetBuffValue(instigator, 'Damage', 'ALL') / 100) or 0
 							local DamageClassMod = 0
-							local DamageTech = DM.GetProperty(idi, 'Tech_Ammunitions', 0)
 							if Projectile.DisplayName == 'Heavy Microwave Laser' and PromotedInst == 1 then
 								amountmod = amountmod * 0.5
 							end
@@ -422,7 +437,8 @@ Unit = Class(OldUnit) {
 									DamageClassMod = BCbp[BaseClass]['DamagePromotionModifier']
 								end
 							end
-							amountmod = amountmod * (1 + DamageClassMod + DamageBuff + DamageRating + DamageTech)
+							local Tech_Dam = DM.GetProperty(id, 'Tech_Damage', 0) / 100
+							amountmod = amountmod * (1 + DamageClassMod + DamageBuff + DamageRating + Tech_Dam)
 							if Projectile.DisplayName == 'Cold Beam' then
 								local ColdBeamDamMod = 1
 								ColdBeamDamMod = (ColdBeamBCMod[BaseClass] or 0.25 + ColdBeam(BCMod[BaseClass] or 0.25) +( PCMod[PrestigeClass] or 0.25)) / 2
@@ -466,7 +482,7 @@ Unit = Class(OldUnit) {
 				end
 				-- LOG('After Vanilla armor compatibility : '..amountmod)
 				-- Armor Absorb
-				if Promoted == 1 then
+				if Promoted == 1 or DM.GetProperty(id, 'TechArmor') or DM.GetProperty(id, 'Tech_AP') then
 					if instigator then
 						local idi = instigator:GetEntityId()
 						local ArmorPiercing = (Projectile.ArmorPiercing or 0)
@@ -890,6 +906,54 @@ Unit = Class(OldUnit) {
 		
 	end,
 	
+	UpdateCapacitors = function(self)
+		local id = self:GetEntityId()
+		local level = CF.GetUnitLevel(self) 
+		local bp = self:GetBlueprint()
+		local brain = self:GetAIBrain()
+		WaitSeconds(2)
+		repeat
+			local PowersList = CF.GetUnitPowers(id)
+			local len = table.getn(PowersList)
+			for i = 1, len do
+				for _, power in Powers do
+					if power.Name() == PowersList[i] and power.AutoCast == true and DM.GetProperty(id, PowersList[i]..'_AutoCast') == 1 and power.CanCast(self, true) then
+						self:ExecutePower(PowersList[i])
+					end
+				end
+			end
+			if self.HasFired == true then 
+				DM.IncProperty(id, 'Stamina', -0.1)
+				DM.SetProperty(id, 'Stamina', math.max(DM.GetProperty(id, 'Stamina'), 0))
+			end
+			if DM.GetProperty(id, 'Stamina_Max') > DM.GetProperty(id, 'Stamina') then
+				local Hull = DM.GetProperty(id, 'Hull', 25)
+				local WeaponCapStanceMod = CF.GetStanceModifier(self,  'StaminaRegen_Mod')
+				local WeaponCapacitorRecoveryBuff = 1 + AoHBuff.GetBuffValue(self, 'WeaponCapacitorRecovery', 'ALL') / 100
+				local Stamina = 0.08 * Hull / 30 * WeaponCapStanceMod * (1 + level/50) * WeaponCapacitorRecoveryBuff
+				local CostMod = math.pow(bp.Economy.BuildCostMass, 0.5)
+				if brain:GetEconomyStored('ENERGY')  > (4000 + CostMod * Stamina * 6) then
+					DM.IncProperty(id, 'Stamina', Stamina)
+					DM.SetProperty(id, 'Stamina', math.min(DM.GetProperty(id, 'Stamina_Max'), DM.GetProperty(id, 'Stamina')))
+					Event['StaminaRegen'..id] = CreateEconomyEvent(self, 6 * CostMod * Stamina, 0, 0.1)
+				end
+			end
+			if DM.GetProperty(id, 'Capacitor_Max') > DM.GetProperty(id, 'Capacitor') then
+				local Intelligence = DM.GetProperty(id, 'Intelligence', 25)
+				local PowerCapacitorRecoveryBuff = 1 + AoHBuff.GetBuffValue(self, 'PowerCapacitorRecovery', 'ALL') / 100
+				local Capacitor =  0.2 * Intelligence / 25 * PowerCapacitorRecoveryBuff * (1 + level/50)
+				local CostMod = math.pow(bp.Economy.BuildCostMass, 0.5)
+				if brain:GetEconomyStored('ENERGY')  > (4000 + 6 * CostMod * Capacitor) then
+					DM.IncProperty(id, 'Capacitor', Capacitor)
+					DM.SetProperty(id, 'Capacitor', math.min(DM.GetProperty(id, 'Capacitor_Max'), DM.GetProperty(id, 'Capacitor')))
+					Event['PowerCapacitorRegen'..id] = CreateEconomyEvent(self, 6 * CostMod * Capacitor, 0, 0.1)
+				end
+			end
+			DM.SetProperty(id, 'RefreshPowers',1)
+			WaitSeconds(0.1)
+		until(self.Dead == true)
+	end,
+	
 	UpdateActivity = function(self)
 		if not self then return end
 		local id = self:GetEntityId()
@@ -907,18 +971,18 @@ Unit = Class(OldUnit) {
 			self.InstigatorsData = {}
 			-- AutoCast Powers
 			if DM.GetProperty(id,'PrestigeClassPromoted') == 1 then
-				local PowersList = CF.GetUnitPowers(id)
-				local len = table.getn(PowersList)
-				for i = 1, len do
-					for _, power in Powers do
-						if power.Name() == PowersList[i] and power.AutoCast == true and DM.GetProperty(id, PowersList[i]..'_AutoCast') == 1 and power.CanCast(self, true) then
-							self:ExecutePower(PowersList[i])
-						end
+				-- local PowersList = CF.GetUnitPowers(id)
+				-- local len = table.getn(PowersList)
+				-- for i = 1, len do
+					-- for _, power in Powers do
+						-- if power.Name() == PowersList[i] and power.AutoCast == true and DM.GetProperty(id, PowersList[i]..'_AutoCast') == 1 and power.CanCast(self, true) then
+							-- self:ExecutePower(PowersList[i])
+						-- end
 						-- if power.Name() == 'Guardian Transformation' and aiBrain.BrainType != 'Human' and (self:GetHealth() / self:GetMaxHealth()) < 0.20 and power.CanCast(self, true) then
 							-- self:ExecutePower( power.Name())
 						-- end
-					end
-				end
+					-- end
+				-- end
 				-- local AIDiff = DM.GetProperty('Global', 'AI_Difficulty', 'Low Trained Imperial Troops')
 				-- local DifficultyMod = {['No Imperial Troops'] = 1, ['Low Trained Imperial Troops'] = 2, ['Trained Imperial Troops'] = 3, ['Well Trained Imperial Troops'] = 4, ['Elite Imperial Troops'] = 5}
 				-- local GuardsBirth = DM.GetProperty(id, 'Guards_Casted', 0)
@@ -1035,39 +1099,7 @@ Unit = Class(OldUnit) {
 				DM.SetProperty(id,'UpdateUnit', 0)
 			end
 			-- Setting Power Capacitor and Weapon Capacitor gain (stamina). 
-			if DM.GetProperty(id,'PrestigeClassPromoted', nil) == 1 then
-				if self.HasFired == true then 
-					DM.IncProperty(id, 'Stamina', -1)
-					DM.SetProperty(id, 'Stamina', math.max(DM.GetProperty(id, 'Stamina'), 0))
-				end
-				if DM.GetProperty(id, 'Stamina_Max') > DM.GetProperty(id, 'Stamina') then
-					local brain = self:GetAIBrain()
-					local Hull = DM.GetProperty(id, 'Hull', 25)
-					local WeaponCapStanceMod = CF.GetStanceModifier(self,  'StaminaRegen_Mod')
-					local WeaponCapacitorRecoveryBuff = 1 + AoHBuff.GetBuffValue(self, 'WeaponCapacitorRecovery', 'ALL') / 100
-					local Stamina = 0.8 * Hull / 30 * WeaponCapStanceMod * (1 + level/50) * WeaponCapacitorRecoveryBuff
-					local CostMod = math.pow(bp.Economy.BuildCostMass, 0.5)
-					if brain:GetEconomyStored('ENERGY')  > (4000 + CostMod * Stamina * 6) then
-						DM.IncProperty(id, 'Stamina', Stamina)
-						DM.SetProperty(id, 'Stamina', math.min(DM.GetProperty(id, 'Stamina_Max'), DM.GetProperty(id, 'Stamina')))
-						DM.SetProperty(id, 'RefreshPowers',1)
-						Event['StaminaRegen'..id] = CreateEconomyEvent(self, 6 * CostMod * Stamina, 0, 1)
-					end
-				end
-				if DM.GetProperty(id, 'Capacitor_Max') > DM.GetProperty(id, 'Capacitor') then
-					local brain = self:GetAIBrain()
-					local Intelligence = DM.GetProperty(id, 'Intelligence', 25)
-					local PowerCapacitorRecoveryBuff = 1 + AoHBuff.GetBuffValue(self, 'PowerCapacitorRecovery', 'ALL') / 100
-					local Capacitor =  2 * Intelligence / 25 * PowerCapacitorRecoveryBuff * (1 + level/50)
-					local CostMod = math.pow(bp.Economy.BuildCostMass, 0.5)
-					if brain:GetEconomyStored('ENERGY')  > (4000 + 6 * CostMod * Capacitor) then
-						DM.IncProperty(id, 'Capacitor', Capacitor)
-						DM.SetProperty(id, 'Capacitor', math.min(DM.GetProperty(id, 'Capacitor_Max'), DM.GetProperty(id, 'Capacitor')))
-						DM.SetProperty(id, 'RefreshPowers',1)
-						Event['PowerCapacitorRegen'..id] = CreateEconomyEvent(self, 6 * CostMod * Capacitor, 0, 1)
-					end
-				end
-			end
+			
 			-- Rate of fire mod
 			for i, wep in bp.Weapon do
 				if wep.Label == 'DeathWeapon' or wep.Label == 'DeathImpact' or  bp.Weapon.TargetType == 'RULEWTT_Projectile' or wep.DisplayName == 'Teleport in' or wep.Label =='ChronoDampener' or wep.Label =='CollossusDeath' or wep.Label =='MegalithDeath' then
@@ -1080,8 +1112,8 @@ Unit = Class(OldUnit) {
 						local RofEnh = 0
 						local RofBuff = AoHBuff.GetBuffValue(self, 'RateOfFire', 'ALL') / 100
 						local RofTech = DM.GetProperty(id, 'Tech_Rate Of Fire', 0)
-						if self:HasEnhancement('CrysalisBeam') or self:HasEnhancement('HeavyAntiMatterCannon') or  self:HasEnhancement('CoolingUpgrade') or self:HasEnhancement('RateOfFire') then RofEnh = 1 end -- ACU range enh compatibility 
-						Weap:ChangeRateOfFire((bpwp.RateOfFire + RofTech + RofBuff + ROfUp + RofEnh) * RofStance)
+						if self:HasEnhancement('HeatSink') or self:HasEnhancement('HeavyAntiMatterCannon') or  self:HasEnhancement('CoolingUpgrade') or self:HasEnhancement('RateOfFire') then RofEnh = 1 end -- ACU range enh compatibility 
+						Weap:ChangeRateOfFire((bpwp.RateOfFire * ((1 + RofTech + RofBuff + ROfUp + RofEnh) * RofStance)))
 					end
 				end
 			end
@@ -1277,7 +1309,7 @@ Unit = Class(OldUnit) {
         if IsAlly(self:GetArmy(), unitKilled:GetArmy()) then return end -- No XP for friendly fire...
 		local bp = self:GetBlueprint()
 		local ACUXPMod = 1
-		if table.find(bp.Categories, 'COMMAND') then ACUXPMod = 2.5 end -- We mod the Mass value of the ACU for more realistic XP
+		if table.find(bp.Categories, 'COMMAND') then ACUXPMod = 8 end -- We mod the Mass value of the ACU for more realistic XP
 		-- We take care of level difference between units and the hero status
 		local LevelMod = 1
 		local SelfLevel = (CF.GetUnitLevel(self) + DM.GetProperty(id, 'Imperial_Rank', 0)) * CF.GetUnitTech(self)
@@ -1291,17 +1323,18 @@ Unit = Class(OldUnit) {
 		end
 		local HeroXPMod = 1
 		if DM.GetProperty(idk,'PrestigeClassPromoted', nil) == 1 then
-			HeroXPMod = 4
+			HeroXPMod = 10
+		end
+		if DM.GetProperty(id,'PrestigeClassPromoted', nil) == 1 then
+			HeroXPMod = HeroXPMod * 0.10
 		end
 		local EliteXPMod = 1
 		if DM.GetProperty(idk, 'Type', nil) == 'Elite' then
 			local EliteLevel = DM.GetProperty(idk, 'EliteLevel', 1)
-			EliteXPMod = 200 * EliteLevel
+			EliteXPMod = 10 * EliteLevel
 		end
-		local feat = 1
-		if massKilled / bp.Economy.BuildCostMass > 1 then feat = math.pow(massKilled / bp.Economy.BuildCostMass, 0.5) end
 		self.MassKilled = self.MassKilled + massKilled -- Saving Mass Killed by unit
-		local XPEarn = math.ceil(math.pow(massKilled, 0.5) * LevelMod * ACUXPMod * HeroXPMod * feat * 0.3 * EliteXPMod)
+		local XPEarn = math.ceil(massKilled/bp.Economy.BuildCostMass * LevelMod * ACUXPMod * HeroXPMod * EliteXPMod * 35)
 		Unit.UpdateUnitData(self, XPEarn)
 		Unit.OldOnKilledUnit(self, unitKilled, massKilled)
     end,
@@ -1316,10 +1349,12 @@ Unit = Class(OldUnit) {
 			if BaseClass == 'Support' then
 				local Power = math.ceil(math.pow(bp.Economy.BuildCostMass, 0.9))
 				local CurrentStorage = DM.GetProperty('Global'..self:GetArmy(), 'EnergyStorage')
-				CurrentStorage = CurrentStorage - Power * 2000
+				CurrentStorage = CurrentStorage - Power * 200
 				self:GetAIBrain():GiveStorage('Energy', CurrentStorage)
 				DM.SetProperty('Global'..self:GetArmy(), 'EnergyStorage', CurrentStorage)
 			end
+			-- Give back Energy Storage from Tech
+			
 			-- Refreshing Logistics
 			local army = self:GetArmy()
 			local ArmyBrain = GetArmyBrain(self:GetArmy())
@@ -1407,6 +1442,7 @@ Unit = Class(OldUnit) {
 		local bp = self:GetBlueprint()
 		local army = self:GetArmy()
 		local level = CF.GetUnitLevel(self)
+		local PreviousLevel = DM.GetProperty(id,'PreviousLevel', 1)
 		local BaseClass = DM.GetProperty(id,'BaseClass','Fighter')
 		local PrestigeClass = DM.GetProperty(id,'PrestigeClass')
 		local Promoted = false
@@ -1466,14 +1502,7 @@ Unit = Class(OldUnit) {
 			end
 		end
 		level = CF.GetUnitLevel(self) -- We need to recast level after XP
-		
-		-- Capacitor and Stamina
-		if Promoted == true then
-			local Stamina =  50 + CF.GetGainPerLevel(self, 'Weapon Capacitor') * level
-			DM.SetProperty(id, 'Stamina_Max', Stamina)
-			local Capacitor = 100 + CF.GetGainPerLevel(self, 'Power Capacitor') * level
-			DM.SetProperty(id, 'Capacitor_Max', Capacitor)
-		end		
+	
 		-- Name
 		if level >= 2 and Promoted == true and DM.GetProperty(id, 'AI_Champion', 0) == 0  then
 			self:SetCustomName(PrestigeClass..' ['..level..']')
@@ -1496,73 +1525,119 @@ Unit = Class(OldUnit) {
 			end
 		elseif table.find(bp.Categories, 'CONSTRUCTION') or table.find(bp.Categories, 'ENGINEER') or table.find(bp.Categories, 'FACTORY') then
 			Building = (Power / 7 * CF.GetSkillCurrent(id, 'Building') / 5) - 1 + math.min(DM.GetProperty(id, 'EngineerConsolidationBonus', 0), DM.GetProperty(id, 'SetBuildingSpeed', DM.GetProperty(id, 'EngineerConsolidationBonus', 0))) +  DM.GetProperty(id, 'Upgrade_Armor_Build Rate Increase', 0)
+			BuffBlueprint {
+				Name = 'Consolidation',
+				DisplayName = 'Consolidation',
+				BuffType = 'Consolidation',
+				Stacks = 'REPLACE',
+				Duration = -1,
+				Affects = {
+						BuildRate = {
+							Add = Building or 0,
+							Mult = 1,
+						},
+					},
+			}
+			Buff.ApplyBuff(self, 'Consolidation')
 		end
-		-- MaxHealth 
-		-- Upgrade
-		local ArmorUGMaxHealth = DM.GetProperty(id,'Upgrade_Armor_Health Increase', 0)
-		local PrestigeClassHealthBonus = 0
-		local PrestigeClassModifier = 1
-		if Promoted == true then
-			PrestigeClassHealthBonus = CF.GetGainPerLevel(self, 'Health') * 20
-			PrestigeClassModifier =  PC[BaseClass..' '..PrestigeClass]['MaxHealthMod'] or 1
-		end
+
 		
-		-- BaseClass Health Modifier
-		local BCHealthMod = 0
-		local Hull = DM.GetProperty(id, 'Hull', 25)
-		if Hull < 30 then
-			BCHealthMod = math.ceil((30-Hull)/30 * bp.Defense.MaxHealth)
-		end
-		
-		-- Range
-	
-		if Promoted == true then
-			if table.find(bp.Categories, 'AIR') or table.find(bp.Categories, 'NAVAL') or table.find(bp.Categories, 'HIGHALTAIR') or table.find(bp.Categories, 'COMMAND') then
-				for i, wep in bp.Weapon do
-					if wep.Label == 'DeathWeapon' or wep.Label == 'DeathImpact' or  bp.Weapon.TargetType == 'RULEWTT_Projectile' or wep.DisplayName == 'Teleport in' or wep.Label =='ChronoDampener' or wep.Label =='CollossusDeath' or wep.Label =='MegalithDeath' then
-					else
-						if wep.Damage > 0 then
-							Weap = self:GetWeapon(i)
-							local RangeUpgrade = DM.GetProperty(id, 'Upgrade_Weapon_'..i..'_'..'Range', 0) or 0
-							local EnhRangeBonus = 0 -- Range increase from AOC vanilla upgrades
-							local TechRange = DM.GetProperty(id, 'Tech_Range', 0)
-							if self:HasEnhancement('CrysalisBeam') or self:HasEnhancement('HeavyAntiMatterCannon') or  self:HasEnhancement('CoolingUpgrade') or  self:HasEnhancement('RateOfFire') or  self:HasEnhancement('PhasonBeamAir') then EnhRangeBonus =  22 end -- ACU range enh compatibility 
-							local TotalRadius = wep.MaxRadius + RangeUpgrade + EnhRangeBonus + TechRange
-							Weap:ChangeMaxRadius(TotalRadius)
+		if (level > PreviousLevel) or Promoted == true then
+			if Promoted == true then
+				if table.find(bp.Categories, 'AIR') or table.find(bp.Categories, 'NAVAL') or table.find(bp.Categories, 'HIGHALTAIR') or table.find(bp.Categories, 'COMMAND') then
+					for i, wep in bp.Weapon do
+						if wep.Label == 'DeathWeapon' or wep.Label == 'DeathImpact' or  bp.Weapon.TargetType == 'RULEWTT_Projectile' or wep.DisplayName == 'Teleport in' or wep.Label =='ChronoDampener' or wep.Label =='CollossusDeath' or wep.Label =='MegalithDeath' then
+						else
+							if wep.Damage > 0 then
+								Weap = self:GetWeapon(i)
+								local RangeUpgrade = DM.GetProperty(id, 'Upgrade_Weapon_'..i..'_'..'Range', 0) or 0
+								local EnhRangeBonus = 0 -- Range increase from AOC vanilla upgrades
+								local TechRange = DM.GetProperty(id, 'Tech_Range', 0)
+								if self:HasEnhancement('CrysalisBeam') or self:HasEnhancement('HeavyAntiMatterCannon') or  self:HasEnhancement('CoolingUpgrade') or  self:HasEnhancement('RateOfFire') or  self:HasEnhancement('PhasonBeamAir') then EnhRangeBonus =  22 end -- ACU range enh compatibility 
+								local TotalRadius = wep.MaxRadius + RangeUpgrade + EnhRangeBonus + TechRange
+								Weap:ChangeMaxRadius(TotalRadius)
+							end
 						end
 					end
 				end
 			end
+			
+			-- BaseClass Health Modifier
+			local BCHealthMod = 0
+			local Hull = DM.GetProperty(id, 'Hull', 25)
+			if Hull < 30 then
+				BCHealthMod = math.ceil((30-Hull)/30 * bp.Defense.MaxHealth)
+			end
+
+			-- MaxHealth 
+			-- Upgrade
+			local ArmorUGMaxHealth = DM.GetProperty(id,'Upgrade_Armor_Health Increase', 0)
+			local PrestigeClassHealthBonus = 0
+			local PrestigeClassModifier = 1
+			if Promoted == true then
+				PrestigeClassHealthBonus = CF.GetGainPerLevel(self, 'Health') * 10
+				PrestigeClassModifier =  PC[BaseClass..' '..PrestigeClass]['MaxHealthMod'] or 1
+			end
+
+			BuffBlueprint {
+				Name = 'HeroesPromoted',
+				DisplayName = 'HeroesPromoted',
+				BuffType = 'HEROESP',
+				Stacks = 'REPLACE',
+				Duration = -1,
+				Affects = {
+						MaxHealth = {
+							DoNoFill = true,
+							Add = ArmorUGMaxHealth + PrestigeClassHealthBonus - BCHealthMod,
+							Mult = PrestigeClassModifier or 1,
+						},
+						Regen = {
+							Add = CF.GetUnitRegen(self),
+							Mult = 1,
+						},
+						BuildRate = {
+							Add = Building or 0,
+							Mult = 1,
+						},
+						MoveMult = {
+							Add = 0,
+							Mult = 1,
+						},
+					},
+			}
+			Buff.ApplyBuff(self, 'HeroesPromoted')
+			
+			-- Capacitor and Stamina
+			if Promoted == true then
+				local Stamina =  50 + CF.GetGainPerLevel(self, 'Weapon Capacitor') * level
+				DM.SetProperty(id, 'Stamina_Max', Stamina)
+				local Capacitor = 100 + CF.GetGainPerLevel(self, 'Power Capacitor') * level
+				DM.SetProperty(id, 'Capacitor_Max', Capacitor)
+			end		
+
+			if (level > PreviousLevel) then
+				BuffBlueprint {
+						Name = 'HeroesHealthXP',
+						DisplayName = 'HeroesHealthXP',
+						BuffType = 'HEROESXP',
+						Stacks = 'REPLACE',
+						Duration = -1,
+						Affects = {
+						MaxHealth = {
+							DoNoFill = true,
+							Add =  CF.GetGainPerLevel(self, 'Health') * (level - 1) ,
+							Mult = 1,
+						},
+					},
+				}
+				Buff.ApplyBuff(self, 'HeroesHealthXP')
+				self:AdjustHealth(self, CF.GetGainPerLevel(self, 'Health') * (level - PreviousLevel))
+				DM.SetProperty(id,'PreviousLevel', level)
+			end
 		end
-		
-		BuffBlueprint {
-			Name = 'HeroesXP',
-			DisplayName = 'HeroesXP',
-			BuffType = 'HEROES',
-			Stacks = 'REPLACE',
-			Duration = -1,
-			Affects = {
-				MaxHealth = {
-					DoNoFill = true,
-					Add = PrestigeClassHealthBonus + ArmorUGMaxHealth + CF.GetGainPerLevel(self, 'Health') * (level - 1) - BCHealthMod,
-					Mult = PrestigeClassModifier or 1,
-				},
-				Regen = {
-					Add = CF.GetUnitRegen(self),
-					Mult = 1,
-				},
-				BuildRate = {
-					Add = Building or 0,
-					Mult = 1,
-				},
-				MoveMult = {
-					Add = 0,
-					Mult = 1,
-				},
-			},
-		}
-		Buff.ApplyBuff(self, 'HeroesXP')
 	end,
+	
+	
 	
 	CreateFx = function(self, FxPath, WaitStart, Duration, SizeModifier, bone) -- called from individual power scripts
 		if bone == nil then

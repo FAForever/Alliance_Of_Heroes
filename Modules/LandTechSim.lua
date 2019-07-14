@@ -7,725 +7,560 @@
 local Buff = import('/lua/sim/buff.lua')
 local ModPath = '/mods/Alliance_Of_Heroes/'
 local DM = import(ModPath..'Modules/DataManager.lua')
+local CF = import(ModPath..'Modules/Calculate_Formula.lua')
+local LesserShield = import(ModPath..'Modules/Powers/LesserShield.lua')
 
 Modifiers = {
-	['Improved Hull'] = {
-		OnStopBeingBuilt = function(self, Level)
+	['Improved Hull Building'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH1') then
+			if table.find(bp.Categories, 'STRUCTURE') then
 				BuffBlueprint {
-					Name = 'Improved Hull',
-					DisplayName = 'Improved Hull',
+					Name = 'Improved Hull Building',
+					DisplayName = 'Improved Hull Building',
 					BuffType = 'HEALTHTECH',
 					Stacks = 'REPLACE',
 					Duration = -1,
 					Affects = {
 						MaxHealth = {
 							DoNoFill = true,
-							Add = bp.Defense.MaxHealth * 1 * Level,
+							Add = bp.Defense.MaxHealth * 0.25 * Level,
 							Mult = 1,
 						},
 					},
 				}
-				Buff.ApplyBuff(self, 'Improved Hull')
+				Buff.ApplyBuff(self, 'Improved Hull Building')
+				self:AdjustHealth(self,bp.Defense.MaxHealth * 0.25 * (Level-PreviousLevel))
 			end
 		end,
 	},
-	['Light Bots Hull'] = {
-		OnStopBeingBuilt = function(self, Level)
+	['Improved Hull Aircraft'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH1') and table.find(bp.Categories, 'BOT') then
+			if table.find(bp.Categories, 'AIR') and (not table.find(bp.Categories, 'EXPERIMENTAL')) then
 				BuffBlueprint {
-					Name = 'Light Bots Hull',
-					DisplayName = 'Light Bots Hull',
+					Name = 'Improved Hull Aircraft',
+					DisplayName = 'Improved Hull Aircraft',
+					BuffType = 'HEALTHTECH',
+					Stacks = 'REPLACE',
+					Duration = -1,
+					Affects = {
+						MaxHealth = {
+							DoNoFill = true,
+							Add = bp.Defense.MaxHealth * 0.10 * Level,
+							Mult = 1,
+						},
+					},
+				}
+				Buff.ApplyBuff(self, 'Improved Hull Aircraft')
+				self:AdjustHealth(self,bp.Defense.MaxHealth * 0.10 * (Level-PreviousLevel))
+			end
+		end,
+	},
+	['Improved Hull Land units'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local bp = self:GetBlueprint()
+			if table.find(bp.Categories, 'LAND') and (not table.find(bp.Categories, 'EXPERIMENTAL')) then
+				BuffBlueprint {
+					Name = 'Improved Hull Land units',
+					DisplayName = 'Improved Hull Land units',
+					BuffType = 'HEALTHTECH',
+					Stacks = 'REPLACE',
+					Duration = -1,
+					Affects = {
+						MaxHealth = {
+							DoNoFill = true,
+							Add = bp.Defense.MaxHealth * 0.15 * Level,
+							Mult = 1,
+						},
+					},
+				}
+				Buff.ApplyBuff(self, 'Improved Hull Land units')
+				self:AdjustHealth(self,bp.Defense.MaxHealth * 0.15 * (Level-PreviousLevel))
+			end
+		end,
+	},
+	['Improved Hull Light Bots'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local bp = self:GetBlueprint()
+			if bp.Defense.MaxHealth < 100 then
+				BuffBlueprint {
+					Name = 'Improved Hull Light Bots',
+					DisplayName = 'Improved Hull Light Bots',
 					BuffType = 'HEALTHBOTTECH',
 					Stacks = 'REPLACE',
 					Duration = -1,
 					Affects = {
 						MaxHealth = {
 							DoNoFill = true,
-							Add = 125 * Level,
+							Add = 25 * Level,
 							Mult = 1,
 						},
 					},
 				}
-				Buff.ApplyBuff(self, 'Light Bots Hull')
+				Buff.ApplyBuff(self, 'Improved Hull Light Bots')
+				self:AdjustHealth(self, 25 * (Level-PreviousLevel))
 			end
 		end,
 	},
-	['Nano Repair'] = {
-		OnStopBeingBuilt = function(self, Level)
+	['Improved Hull Naval units'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH1') then
+			if table.find(bp.Categories, 'NAVAL') and (not table.find(bp.Categories, 'EXPERIMENTAL')) then
 				BuffBlueprint {
-					Name = 'Nano Repair',
-					DisplayName = 'Nano Repair',
-					BuffType = 'Nano Repair',
-					Stacks = 'REPLACE',
-					Duration = -1,
-					Affects = {
-						Regen = {
-							Add = 1 * Level,
-							Mult = 1,
-						},
-					},
-				}
-				Buff.ApplyBuff(self, 'Nano Repair')
-			end
-		end,
-	},
-	['Improved Hull 2'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') then
-				BuffBlueprint {
-					Name = 'Improved Hull 2',
-					DisplayName = 'Improved Hull 2',
+					Name = 'Improved Hull Naval units',
+					DisplayName = 'Improved Hull Naval units',
 					BuffType = 'HEALTHTECH',
 					Stacks = 'REPLACE',
 					Duration = -1,
 					Affects = {
 						MaxHealth = {
 							DoNoFill = true,
-							Add = bp.Defense.MaxHealth * 0.25 * Level,
+							Add = bp.Defense.MaxHealth * 0.10 * Level,
 							Mult = 1,
 						},
 					},
 				}
-				Buff.ApplyBuff(self, 'Improved Hull 2')
+				Buff.ApplyBuff(self, 'Improved Hull Naval units')
+				self:AdjustHealth(self,bp.Defense.MaxHealth * 0.10 * (Level-PreviousLevel))
 			end
 		end,
 	},
-	['Anti-Air Advanced Hull'] = {
-		OnStopBeingBuilt = function(self, Level)
+	['Improved Hull Experimental units'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') and table.find(bp.Categories, 'ANTIAIR') then
+			if table.find(bp.Categories, 'EXPERIMENTAL') then
 				BuffBlueprint {
-					Name = 'Anti-Air Advanced Hull',
-					DisplayName = 'Anti-Air Advanced Hull',
+					Name = 'Improved Hull Experimental units',
+					DisplayName = 'Improved Hull Experimental units',
 					BuffType = 'HEALTHTECH',
 					Stacks = 'REPLACE',
 					Duration = -1,
 					Affects = {
 						MaxHealth = {
 							DoNoFill = true,
-							Add = bp.Defense.MaxHealth * 0.40 * Level,
+							Add = bp.Defense.MaxHealth * 0.10 * Level,
 							Mult = 1,
 						},
 					},
 				}
-				Buff.ApplyBuff(self, 'Anti-Air Advanced Hull')
+				Buff.ApplyBuff(self, 'Improved Hull Experimental units')
+				self:AdjustHealth(self,bp.Defense.MaxHealth * 0.10 * (Level-PreviousLevel))
 			end
 		end,
 	},
-	['Missile Advanced Hull'] = {
-		OnStopBeingBuilt = function(self, Level)
+	['Improved Regen'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') and table.find(bp.Categories, 'INDIRECTFIRE') then
-				BuffBlueprint {
-					Name = 'Missile Advanced Hull',
-					DisplayName = 'Missile Advanced Hull',
-					BuffType = 'HEALTHTECH',
-					Stacks = 'REPLACE',
-					Duration = -1,
-					Affects = {
-						MaxHealth = {
-							DoNoFill = true,
-							Add = bp.Defense.MaxHealth * 0.40 * Level,
-							Mult = 1,
-						},
+			BuffBlueprint {
+				Name = 'Improved Regen',
+				DisplayName = 'Improved Regen',
+				BuffType = 'REGENTECH',
+				Stacks = 'REPLACE',
+				Duration = -1,
+				Affects = {
+					Regen = {
+						Add = 2 * Level,
+						Mult = 1,
 					},
-				}
-				Buff.ApplyBuff(self, 'Missile Advanced Hull')
+				},
+			}
+			Buff.ApplyBuff(self, 'Improved Regen')
+		end,
+	},
+	['Improved Shield Power'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local bp = self:GetBlueprint()
+			local id = self:GetEntityId()
+			DM.SetProperty(id, 'Tech_Shield_MaxHealth_Bonus', Level * 0.15)
+			local _ShieldMaxHealth = 0
+			if bp.Enhancements.Shield.ShieldMaxHealth then
+				_ShieldMaxHealth = bp.Enhancements.Shield.ShieldMaxHealth + bp.Enhancements.Shield.ShieldMaxHealth * Level * 0.15
+				DM.SetProperty(id, 'Tech_Shield_MaxHealth', _ShieldMaxHealth)
+				if self.MyShield then
+					self.MyShield:SetMaxHealth(_ShieldMaxHealth)
+					self.MyShield:AdjustHealth(self, bp.Enhancements.Shield.ShieldMaxHealth * Level * 0.15) 
+				end
+			end
+			if bp.Defense.Shield.ShieldMaxHealth then
+				_ShieldMaxHealth = bp.Defense.Shield.ShieldMaxHealth + bp.Defense.Shield.ShieldMaxHealth * Level * 0.15
+				DM.SetProperty(id, 'Tech_Shield_MaxHealth', bp.Defense.Shield.ShieldMaxHealth * Level * 0.15)
+				self.MyShield:SetMaxHealth(_ShieldMaxHealth)
+				self.MyShield:AdjustHealth(self, bp.Defense.Shield.ShieldMaxHealth * Level * 0.15) 
+			end
+			if self.MyShield and DM.GetProperty(id,'PrestigeClassPromoted') == 1 then
+				_ShieldMaxHealth = _ShieldMaxHealth + LesserShield.GetShieldPower(self, true)
+				self.MyShield:SetMaxHealth(_ShieldMaxHealth)
+				self.MyShield:AdjustHealth(self, _ShieldMaxHealth * (1 + (Level-PreviousLevel) * 0.15))
 			end
 		end,
 	},
-	['Combat Advanced Hull'] = {
-		OnStopBeingBuilt = function(self, Level)
+	['Improved Shield Regen'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') then
-				if table.find(bp.Categories, 'TANK') or table.find(bp.Categories, 'BOT') then
+			local id = self:GetEntityId()
+			local ShieldRegenRate = 0
+			DM.SetProperty(id, 'Tech_Shield_RegenRate_Bonus', Level * 8)
+			if bp.Enhancements.Shield.ShieldRegenRate then
+				ShieldRegenRate = bp.Enhancements.Shield.ShieldRegenRate + Level * 8
+				DM.SetProperty(id, 'Tech_Shield_RegenRate', Level * 8)
+				if self.MyShield then
+					self.MyShield:SetShieldRegenRate(ShieldRegenRate)
+				end
+			end
+			if bp.Defense.Shield.ShieldRegenRate then
+				ShieldRegenRate = bp.Defense.Shield.ShieldRegenRate + Level * 8
+				DM.SetProperty(id, 'Tech_Shield_RegenRate', Level * 8)
+				self.MyShield:SetShieldRegenRate(ShieldRegenRate)
+			end
+			if self.MyShield and DM.GetProperty(id,'PrestigeClassPromoted') == 1 then
+				DM.SetProperty(id, 'Tech_Shield_RegenRate', Level * 8)
+				-- LOG('My Shield')
+				if ShieldRegenRate == 0 then
+					-- LOG('No natural shield')
+					LesserShield.GetShieldPower(self, true)
+					ShieldRegenRate = ShieldRegenRate + Level * 8 + DM.GetProperty(id, 'Power_Shield_RegenRate', 0)
+				else
+					-- LOG('Natural shield')
+					LesserShield.GetShieldPower(self, true)
+					ShieldRegenRate = ShieldRegenRate + DM.GetProperty(id, 'Power_Shield_RegenRate', 0)
+				end
+				self.MyShield:SetShieldRegenRate(ShieldRegenRate)
+			end
+			
+		end,
+	},
+	['Energy Drain'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			DM.SetProperty('Global'..self:GetArmy(), 'Energy Drain', Level * 8)
+		end,
+	},		
+	['Improved Engineers Buildate'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local bp = self:GetBlueprint()
+			if table.find(bp.Categories, 'ENGINEER') then
+				if table.find(bp.Categories, 'COMMAND') or table.find(bp.Categories, 'SUBCOMMANDER') then else
+					local UnitTech = CF.GetUnitTech(self)
+					local BuildRate = Level * UnitTech
 					BuffBlueprint {
-						Name = 'Combat Advanced Hull',
-						DisplayName = 'Combat Advanced Hull',
-						BuffType = 'HEALTHTECH',
+						Name = 'Improved Engineers Buildate',
+						DisplayName = 'Improved Engineers Buildate',
+						BuffType = 'BUILDRATETECH',
 						Stacks = 'REPLACE',
 						Duration = -1,
 						Affects = {
-							MaxHealth = {
-								DoNoFill = true,
-								Add = bp.Defense.MaxHealth * 0.40 * Level,
+							BuildRate = {
+								Add = BuildRate,
 								Mult = 1,
 							},
 						},
 					}
-					Buff.ApplyBuff(self, 'Combat Advanced Hull')
+					Buff.ApplyBuff(self, 'Improved Engineers Buildate')
 				end
 			end
 		end,
-	},		
-	['Nano Repair 2'] = {
-		OnStopBeingBuilt = function(self, Level)
+	},
+	['Improved Factory Buildate'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') then
+			if table.find(bp.Categories, 'FACTORY')  then
+				local UnitTech = CF.GetUnitTech(self)
+				local BuildRate = Level * UnitTech * 4
 				BuffBlueprint {
-					Name = 'Nano Repair 2',
-					DisplayName = 'Nano Repair 2',
-					BuffType = 'Nano Repair 2',
+					Name = 'Improved Factory Buildate',
+					DisplayName = 'Improved Factory Buildate',
+					BuffType = 'BUILDRATEFACTTECH',
 					Stacks = 'REPLACE',
 					Duration = -1,
 					Affects = {
-						Regen = {
-							Add = 2 * Level,
+						BuildRate = {
+							Add = BuildRate,
 							Mult = 1,
 						},
 					},
 				}
-				Buff.ApplyBuff(self, 'Nano Repair 2')
+				Buff.ApplyBuff(self, 'Improved Factory Buildate')
 			end
 		end,
 	},
-	['Obsidian Tank Shield'] = {
-		OnCreate = function(self, Level)
+	['Improved Engineer Station Buildate'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if bp.BlueprintId == 'ual0202' then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_ShieldPower', Level * 0.2)
-			end
-		end,
-	},
-	['Harbinger Shield'] = {
-		OnCreate = function(self, Level)
-			local bp = self:GetBlueprint()
-			if bp.BlueprintId == 'ual0303' then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_ShieldPower', Level * 0.2)
-			end
-		end,
-	},
-	['Mobile Tech 2 Shield'] = {
-		OnCreate = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') and table.find(bp.Categories, 'SHIELD') and table.find(bp.Categories, 'DEFENSE') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_ShieldPower', Level * 0.8)
-			end
-		end,
-	},
-	['Mobile Tech 3 Shield'] = {
-		OnCreate = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') and table.find(bp.Categories, 'SHIELD') and table.find(bp.Categories, 'DEFENSE') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_ShieldPower', Level * 0.8)
-			end
-		end,
-	},
-	['Improved Hull 3'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
+			if table.find(bp.Categories, 'ENGINEERSTATION') or table.find(bp.Categories, 'STATIONASSISTPOD') then
+				local UnitTech = CF.GetUnitTech(self)
+				local BuildRate = Level * 12
 				BuffBlueprint {
-					Name = 'Improved Hull 3',
-					DisplayName = 'Improved Hull 3',
-					BuffType = 'HEALTHTECH',
+					Name = 'Improved Engineer Station Buildate',
+					DisplayName = 'Improved Engineer Station Buildate',
+					BuffType = 'BUILDRATEESTTECH',
 					Stacks = 'REPLACE',
 					Duration = -1,
 					Affects = {
-						MaxHealth = {
-							DoNoFill = true,
-							Add = bp.Defense.MaxHealth * 0.20 * Level,
+						BuildRate = {
+							Add = BuildRate,
 							Mult = 1,
 						},
 					},
 				}
-				Buff.ApplyBuff(self, 'Improved Hull 3')
+				Buff.ApplyBuff(self, 'Improved Engineer Station Buildate')
 			end
 		end,
 	},
-	['Anti-Air Advanced Hull 2'] = {
-		OnStopBeingBuilt = function(self, Level)
+	['Improved Commanders and SubCommanders Buildate'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') and table.find(bp.Categories, 'ANTIAIR') then
+			if table.find(bp.Categories, 'COMMAND') or table.find(bp.Categories, 'SUBCOMMANDER')  then
+				local BuildRate = Level * 8
 				BuffBlueprint {
-					Name = 'Anti-Air Advanced Hull',
-					DisplayName = 'Anti-Air Advanced Hull',
-					BuffType = 'HEALTHTECH',
+					Name = 'Improved Com Buildate',
+					DisplayName = 'Improved Com Buildate',
+					BuffType = 'BUILDRATECOMTTECH',
 					Stacks = 'REPLACE',
 					Duration = -1,
 					Affects = {
-						MaxHealth = {
-							DoNoFill = true,
-							Add = bp.Defense.MaxHealth * 0.40 * Level,
+						BuildRate = {
+							Add = BuildRate,
 							Mult = 1,
 						},
 					},
 				}
-				Buff.ApplyBuff(self, 'Anti-Air Advanced Hull')
+				Buff.ApplyBuff(self, 'Improved Com Buildate')
 			end
 		end,
 	},
-	['Artillery Advanced Hull'] = {
-		OnStopBeingBuilt = function(self, Level)
+	['Improved ACU Mass & Energy Production'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') and table.find(bp.Categories, 'ARTILLERY') then
+			if table.find(bp.Categories, 'COMMAND') then
+				local Mass = Level * 1
+				local Energy = Level * 2
 				BuffBlueprint {
-					Name = 'Artillery Advanced Hull',
-					DisplayName = 'Artillery Advanced Hull',
-					BuffType = 'HEALTHTECH',
+					Name = 'Improved ACU Mass & Energy Production',
+					DisplayName = 'Improved ACU Mass & Energy Production',
+					BuffType = 'MASSENERGYPRODCOMTECH',
 					Stacks = 'REPLACE',
 					Duration = -1,
 					Affects = {
-						MaxHealth = {
-							DoNoFill = true,
-							Add = bp.Defense.MaxHealth * 0.25 * Level,
+						EnergyProduction = {
+							Add = Energy,
+							Mult = 1,
+						},
+						MassProduction = {
+							Add = Mass,
 							Mult = 1,
 						},
 					},
 				}
-				Buff.ApplyBuff(self, 'Artillery Advanced Hull')
+				Buff.ApplyBuff(self, 'Improved ACU Mass & Energy Production')
 			end
 		end,
 	},
-	['Combat Advanced Hull 2'] = {
-		OnStopBeingBuilt = function(self, Level)
+	['Improved Energy Production'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				if table.find(bp.Categories, 'TANK') or table.find(bp.Categories, 'BOT') or table.find(bp.Categories, 'COMMAND') then
-					BuffBlueprint {
-						Name = 'Combat Advanced Hull 2',
-						DisplayName = 'Combat Advanced Hull 2',
-						BuffType = 'HEALTHTECH',
-						Stacks = 'REPLACE',
-						Duration = -1,
-						Affects = {
-							MaxHealth = {
-								DoNoFill = true,
-								Add = bp.Defense.MaxHealth * 0.40 * Level,
-								Mult = 1,
-							},
-						},
-					}
-					Buff.ApplyBuff(self, 'Combat Advanced Hull 2')
-				end
-			end
-		end,
-	},		
-		
-	['Nano Repair 3'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
+			if table.find(bp.Categories, 'ENERGYPRODUCTION') and table.find(bp.Categories, 'STRUCTURE') then
+				local Energy = Level * 0.05
 				BuffBlueprint {
-					Name = 'Nano Repair 3',
-					DisplayName = 'Nano Repair 3',
-					BuffType = 'Nano Repair',
+					Name = 'Improved Energy Production',
+					DisplayName = 'Improved Energy Production',
+					BuffType = 'ENERGYPRODCOMTECH',
 					Stacks = 'REPLACE',
 					Duration = -1,
 					Affects = {
-						Regen = {
-							Add = 3 * Level,
+						EnergyProduction = {
+							Add = Energy,
 							Mult = 1,
 						},
 					},
 				}
-				Buff.ApplyBuff(self, 'Nano Repair 3')
+				Buff.ApplyBuff(self, 'Improved Energy Production')
 			end
 		end,
 	},
-	['Armors'] = {
-		OnStopBeingBuilt = function(self, Level)
+	['Improved Energy Storage'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH1') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Armor', Level * 5)
+			if table.find(bp.Categories, 'COMMAND') then
+				local EnergyS = (Level-PreviousLevel) * 4000
+				local CurrentStorage = DM.GetProperty('Global'..self:GetArmy(), 'EnergyStorage')
+				self:GetAIBrain():GiveStorage('Energy', CurrentStorage + EnergyS)
+				DM.SetProperty('Global'..self:GetArmy(), 'EnergyStorage', CurrentStorage + EnergyS)
+				DM.SetProperty('Global'..self:GetArmy(), 'EnergyStorageTechLevel', Level)
 			end
 		end,
 	},
-	['Armor Layers'] = {
-		OnStopBeingBuilt = function(self, Level)
+	['Improved Structures Armor'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH1') or table.find(bp.Categories, 'TECH2') or table.find(bp.Categories, 'TECH3') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_ArmorLayers', Level * 1)
+			local id = self:GetEntityId()
+			if table.find(bp.Categories, 'STRUCTURE') then
+				DM.SetProperty(id, 'TechArmor', 5 * Level)
+				DM.SetProperty(id, 'TechArmorLevel', Level)
+			end
+		end,
+	},
+	['Improved Naval Armor'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local bp = self:GetBlueprint()
+			local id = self:GetEntityId()
+			if table.find(bp.Categories, 'NAVAL') then
+				DM.SetProperty(id, 'TechArmor', 5 * Level)
+				DM.SetProperty(id, 'TechArmorLevel', Level)
+			end
+		end,
+	},
+	['Improved Aircraft Armor'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local bp = self:GetBlueprint()
+			local id = self:GetEntityId()
+			if table.find(bp.Categories, 'AIR') then
+				DM.SetProperty(id, 'TechArmor', 5 * Level)
+				DM.SetProperty(id, 'TechArmorLevel', Level)
+			end
+		end,
+	},
+	['Improved Land Units Armor'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local bp = self:GetBlueprint()
+			local id = self:GetEntityId()
+			if table.find(bp.Categories, 'LAND') and (not table.find(bp.Categories, 'EXPERIMENTAL')) then
+				DM.SetProperty(id, 'TechArmor', 5 * Level)
+				DM.SetProperty(id, 'TechArmorLevel', Level)
+			end
+		end,
+	},
+	['Improved Experimental Armor'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local bp = self:GetBlueprint()
+			local id = self:GetEntityId()
+			if table.find(bp.Categories, 'EXPERIMENTAL') then
+				DM.SetProperty(id, 'TechArmor', 5 * Level)
+				DM.SetProperty(id, 'TechArmorLevel', Level)
 			end
 		end,
 	},
 	['High Damage Reducer'] = {
-		OnStopBeingBuilt = function(self, Level)
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local id = self:GetEntityId()
+			DM.SetProperty(id, 'Tech_High Damage Reducer', 5 * Level)
+		end,
+	},
+	['Improved Defense'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local id = self:GetEntityId()
+			DM.SetProperty(id, 'Tech_Defense', 15 * Level)
+		end,
+	},
+	['Improved Turrets Damage'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH1') or table.find(bp.Categories, 'TECH2') or table.find(bp.Categories, 'TECH3') then
+			if table.find(bp.Categories, 'DEFENSE') and table.find(bp.Categories, 'STRUCTURE') then
 				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_High Damage Reducer', Level * 5 + 10)
+				DM.SetProperty(id, 'Tech_Damage', 25 * Level)
 			end
 		end,
 	},
-	['Defense'] = {
-		OnStopBeingBuilt = function(self, Level)
+	['Improved Aircrafts Damage'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH1') or table.find(bp.Categories, 'TECH2') or table.find(bp.Categories, 'TECH3') then
+			if table.find(bp.Categories, 'AIR') and (not table.find(bp.Categories, 'EXPERIMENTAL')) then
 				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Defense', Level * 5)
+				DM.SetProperty(id, 'Tech_Damage', 10 * Level)
+			end
+		end,
+	},
+	['Improved Naval Damage'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local bp = self:GetBlueprint()
+			if table.find(bp.Categories, 'NAVAL') and (not table.find(bp.Categories, 'EXPERIMENTAL')) then
+				local id = self:GetEntityId()
+				DM.SetProperty(id, 'Tech_Damage', 10 * Level)
+			end
+		end,
+	},
+	['Improved Land Units Damage'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local bp = self:GetBlueprint()
+			if table.find(bp.Categories, 'LAND') and (not table.find(bp.Categories, 'EXPERIMENTAL')) then
+				local id = self:GetEntityId()
+				DM.SetProperty(id, 'Tech_Damage', 15 * Level)
+			end
+		end,
+	},
+	['Improved Experimentals Damage'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local bp = self:GetBlueprint()
+			if table.find(bp.Categories, 'EXPERIMENTAL') then
+				local id = self:GetEntityId()
+				DM.SetProperty(id, 'Tech_Damage', 10 * Level)
+			end
+		end,
+	},
+	['Improved Rate of Fire'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local bp = self:GetBlueprint()
+			local id = self:GetEntityId()
+			if not table.find(bp.Categories, 'EXPERIMENTAL') then
+				DM.SetProperty(id, 'Tech_Rate Of Fire', Level * 0.05)
+				local rof = 1 - Level * 0.05
+				BuffBlueprint {
+					Name = 'Improved rof',
+					DisplayName = 'Improved rof',
+					BuffType = 'DAMAGETECH',
+					Stacks = 'REPLACE',
+					Duration = -1,
+					Affects = {
+						RateOfFire = {
+							Add = 0,
+							Mult = rof,
+						},
+					},
+				}
+				Buff.ApplyBuff(self, 'Improved rof')
+			end
+		end,
+	},
+	['Improved Armor Piercing'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local id = self:GetEntityId()
+			DM.SetProperty(id, 'Tech_AP', 5 * Level)
+		end,
+	},
+	['Improved Accuracy'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local id = self:GetEntityId()
+			DM.SetProperty(id, 'Tech_Accuracy', 15 * Level)
+		end,
+	},
+	['Improved Range'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			local id = self:GetEntityId()
+			local bp = self:GetBlueprint()
+			DM.SetProperty(id, 'Tech_Range', 1 * Level)
+			if bp.Weapon != nil then
+				for i, wep in bp.Weapon do
+					if wep.Label == 'DeathWeapon' or wep.Label == 'DeathImpact' or  bp.Weapon.TargetType == 'RULEWTT_Projectile' or wep.DisplayName == 'Teleport in' or wep.Label =='ChronoDampener' or wep.Label =='CollossusDeath' or wep.Label =='MegalithDeath' then
+					else
+						if wep.Damage > 0 then
+							Weap = self:GetWeapon(i)
+							local RangeUpgrade = DM.GetProperty(id, 'Upgrade_Weapon_'..i..'_'..'Range', 0) or 0
+							local EnhRangeBonus = 0 -- Range increase from AOC vanilla upgrades
+							local TechRange = DM.GetProperty(id, 'Tech_Range', 0)
+							if self:HasEnhancement('CrysalisBeam') or self:HasEnhancement('HeavyAntiMatterCannon') or  self:HasEnhancement('CoolingUpgrade') or  self:HasEnhancement('RateOfFire') or  self:HasEnhancement('PhasonBeamAir') then EnhRangeBonus =  22 end -- ACU range enh compatibility 
+							local TotalRadius = wep.MaxRadius + RangeUpgrade + EnhRangeBonus + TechRange
+							Weap:ChangeMaxRadius(TotalRadius)
+						end
+					end
+				end
 			end
 		end,
 	},
 	['Health Drain'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH1') or table.find(bp.Categories, 'TECH2') or table.find(bp.Categories, 'TECH3') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Health Drain', Level)
-			end
-		end,
-	},
-	['Armors 2'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Armor', Level * 5)
-			end
-		end,
-	},
-	['Armor Anti-Artillery Reinforcement'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Armor_Artillery', Level * 8)
-			end
-		end,
-	},
-	['Armor Anti-Bomb Reinforcement'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Armor_Bomb', Level * 8)
-			end
-		end,
-	},
-	['Armor Anti-Direct Fire Naval Reinforcement'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Armor_Direct Fire Naval', Level * 8)
-			end
-		end,
-	},
-	['Armor Anti-Missile Reinforcement'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Armor_Missile', Level * 8)
-			end
-		end,
-	},
-	['Armors 3'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Armor', Level * 5)
-			end
-		end,
-	},
-		['Armor Anti-Artillery Reinforcement 2'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Armor_Artillery', Level * 8)
-			end
-		end,
-	},
-	['Armor Anti-Bomb Reinforcement 2'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Armor_Bomb', Level * 8)
-			end
-		end,
-	},
-	['Armor Anti-Direct Fire Naval Reinforcement 2'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Armor_Direct Fire Naval', Level * 8)
-			end
-		end,
-	},
-	['Armor Anti-Missile Reinforcement 2'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Armor_Missile', Level * 8)
-			end
-		end,
-	},
-	['Armor Anti-Direct Fire Experimental'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH1') or table.find(bp.Categories, 'TECH2') or table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Armor_Direct Fire Experimental', Level * 8)
-			end
-		end,
-	},
-	['Ammunitions'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH1') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Ammunitions', Level * 0.05)
-			end
-		end,
-	},
-	['Ammunitions High Velocity'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH1') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Ammunitions High Velocity', Level)
-			end
-		end,
-	},
-	['Improved Aiming Cumputer'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
+		InstantUpgrade = function(self, Level, PreviousLevel)
 			local id = self:GetEntityId()
-			DM.SetProperty(id, 'Tech_Improved Aiming Cumputer', Level * 5)
-		end,
-	},
-	['AP Ammunitions'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			local id = self:GetEntityId()
-			DM.SetProperty(id, 'Tech_Armor Piercing', Level * 2)
-		end,
-	},
-	['Improved Weapon Barrel Cooling'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH1') or table.find(bp.Categories, 'TECH2') or table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				-- for i, wep in bp.Weapon do
-					-- if wep.Label == 'DeathWeapon' or wep.Label == 'DeathImpact' or  bp.Weapon.TargetType == 'RULEWTT_Projectile' or wep.DisplayName == 'Teleport in' or wep.Label =='ChronoDampener' or wep.Label =='CollossusDeath' or wep.Label =='MegalithDeath' then
-					-- else
-						-- if wep.Damage > 0 then
-							-- Weap = self:GetWeapon(i)
-							-- local bpwp = Weap:GetBlueprint()
-							-- Weap:ChangeRateOfFire(bpwp.RateOfFire * (1 + (Level * 0.03)))
-						-- end
-					-- end
-				-- end
-				DM.SetProperty(id, 'Tech_Rate Of Fire', Level * 0.03)
-			end
-		end,
-	},
-	['Long Weapon Barrel'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH1') or table.find(bp.Categories, 'TECH2') or table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				-- for i, wep in bp.Weapon do
-					-- if wep.Label == 'DeathWeapon' or wep.Label == 'DeathImpact' or  bp.Weapon.TargetType == 'RULEWTT_Projectile' or wep.DisplayName == 'Teleport in' or wep.Label =='ChronoDampener' or wep.Label =='CollossusDeath' or wep.Label =='MegalithDeath' then
-					-- else
-						-- if wep.Damage > 0 then
-							-- Weap = self:GetWeapon(i)
-							-- local bpwp = Weap:GetBlueprint()
-							-- Weap:ChangeMaxRadius(bpwp.MaxRadius + Level)
-						-- end
-					-- end
-				-- end
-				DM.SetProperty(id, 'Tech_Range', Level)
-			end
-		end,
-	},
-	['Ammunitions 2'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Ammunitions', Level * 0.05)
-			end
-		end,
-	},
-	['Ammunitions Anti-Bot'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Damage to Bots', Level * 0.12)
-			end
-		end,
-	},
-	['Ammunitions Anti-Tank'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Damage to Tanks', Level * 0.12)
-			end
-		end,
-	},
-	['Ammunitions Anti-Naval'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Damage to Navals', Level * 0.12)
-			end
-		end,
-	},
-	['Ammunitions Anti-SubCommander'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Damage to SubCommanders', Level * 0.12)
-			end
-		end,
-	},
-	['Ammunitions Anti-Structure'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Damage to Structures', Level * 0.12)
-			end
-		end,
-	},
-	['Ammunitions 3'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Ammunitions', Level * 0.05)
-			end
-		end,
-	},
-	['Ammunitions 2 Anti-Bot'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Damage to Bots', Level * 0.12)
-			end
-		end,
-	},
-	['Ammunitions 2 Anti-Tank'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Damage to Tanks', Level * 0.12)
-			end
-		end,
-	},
-	['Ammunitions 2 Anti-Naval'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Damage to Navals', Level * 0.12)
-			end
-		end,
-	},
-	['Ammunitions 2 Anti-SubCommander'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Damage to SubCommanders', Level * 0.12)
-			end
-		end,
-	},
-	['Ammunitions 2 Anti-Structure'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Damage to Structures', Level * 0.12)
-			end
-		end,
-	},
-	['Ammunitions Anti-Experimental'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') or table.find(bp.Categories, 'COMMAND') then
-				local id = self:GetEntityId()
-				DM.SetProperty(id, 'Tech_Damage to Experimentals', Level * 0.12)
-			end
-		end,
-	},
-	['Engineering Suite'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH1') and table.find(bp.Categories, 'ENGINEER') then
-				BuffBlueprint {
-					Name = 'Engineering Suite',
-					DisplayName = 'Engineering Suite',
-					BuffType = 'BuildrateTech',
-					Stacks = 'REPLACE',
-					Duration = -1,
-					Affects = {
-						BuildRate = {
-							Add = 1 * Level,
-							Mult = 1,
-						},
-					},
-				}
-				Buff.ApplyBuff(self, 'Engineering Suite')
-			end
-		end,
-	},
-	['Engineering Suite 2'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH2') and table.find(bp.Categories, 'ENGINEER') then
-				BuffBlueprint {
-					Name = 'Engineering Suite 2',
-					DisplayName = 'Engineering Suite 2',
-					BuffType = 'BuildrateTech',
-					Stacks = 'REPLACE',
-					Duration = -1,
-					Affects = {
-						BuildRate = {
-							Add = 3 * Level,
-							Mult = 1,
-						},
-					},
-				}
-				Buff.ApplyBuff(self, 'Engineering Suite 2')
-			end
-		end,
-	},
-	['Engineering Suite 3'] = {
-		OnStopBeingBuilt = function(self, Level)
-			local bp = self:GetBlueprint()
-			if table.find(bp.Categories, 'TECH3') and table.find(bp.Categories, 'ENGINEER') then
-				BuffBlueprint {
-					Name = 'Engineering Suite 3',
-					DisplayName = 'Engineering Suite 3',
-					BuffType = 'BuildrateTech',
-					Stacks = 'REPLACE',
-					Duration = -1,
-					Affects = {
-						BuildRate = {
-							Add = 5 * Level,
-							Mult = 1,
-						},
-					},
-				}
-				Buff.ApplyBuff(self, 'Engineering Suite 3')
-			end
+			DM.SetProperty(id, 'Tech_Health Drain', 2 * Level)
 		end,
 	},
 }
+
 	

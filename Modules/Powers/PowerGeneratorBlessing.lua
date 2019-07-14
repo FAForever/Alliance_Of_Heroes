@@ -28,7 +28,7 @@ function Description(unit) -- Mandatory function
 	local ProductionBonus = math.ceil(math.pow((Power + 5) * (0.5 + (TechLevel - 1)) * 0.8, 0.7) * 3)
 	local ProductionBonus2 = math.ceil(math.pow((Power + 5) * (0.5 + (TechLevel - 2)) * 0.8, 0.7) * 3)
 	local ProductionBonus3 = math.ceil(math.pow((Power + 5) * (0.5 + (TechLevel - 3)) * 0.8, 0.7) * 3)
-	local Tp = {} Tp.Line = {} Tp.Width = 330 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 270 Tp.OffSetY = -70
 	table.insert(Tp.Line, {'Energy Maximizer'})
 	table.insert(Tp.Line, {'AOE (20) Power Generator blessing Chant' , Color.WHITE})
 	if TechLevel >= 1 then

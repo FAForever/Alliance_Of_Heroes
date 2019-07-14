@@ -32,7 +32,7 @@ function Description(unit) -- Mandatory function
 	
 	local Specialization = ''
 	local SpecializationBonus = 50
-	local Tp = {} Tp.Line = {} Tp.Width = 330 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 275 Tp.OffSetY = -70
 	table.insert(Tp.Line, {'Gentle Melody'})
 	table.insert(Tp.Line, {'AOE (20) Health Recovery Buff Melody Chant' , Color.WHITE})
 	table.insert(Tp.Line, {'..Personal :', Color.GREY_LIGHT})

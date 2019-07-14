@@ -39,7 +39,7 @@ BaseClassBlueprint = {
 			},	
 		},
 		DamagePromotionModifier = 0.25,
-		HealthGainModifier = 2,
+		HealthGainModifier = 0.5,
 		StaminaGainModifier = 1,
 		CapacitorGainModifier = 1,
 	},
@@ -72,7 +72,7 @@ BaseClassBlueprint = {
 			},	
 		},
 		DamagePromotionModifier = 0.25,
-		HealthGainModifier = 1.2,
+		HealthGainModifier = 0.3,
 		StaminaGainModifier = 0.25,
 		CapacitorGainModifier = 3,
 	},
@@ -108,7 +108,7 @@ BaseClassBlueprint = {
 			},	
 		},
 		DamagePromotionModifier = 0.25,
-		HealthGainModifier = 1.6,
+		HealthGainModifier = 0.4,
 		StaminaGainModifier = 1.25,
 		CapacitorGainModifier = 1,
 	},
@@ -141,7 +141,7 @@ BaseClassBlueprint = {
 			},			
 		},
 		DamagePromotionModifier = 0.25,
-		HealthGainModifier = 1,
+		HealthGainModifier = 0.2,
 		StaminaGainModifier = 0.25,
 		CapacitorGainModifier = 4,
 	},
@@ -238,7 +238,7 @@ PrestigeClass = {
 			local desc = 'The Fighter Guardian is a balanced class. He protects and repairs defense buildings.'
 			return desc
 		end,
-		MaxHealthMod = 0.48,
+		MaxHealthMod = 2,
 	},
 	['Support Guardian'] = {
 		IsAvailable = function(id)
@@ -264,7 +264,7 @@ PrestigeClass = {
 			local desc = 'The Support Guardian is a defensive class. He protects and repairs defense buildings. He got a huge energy storage and energy to mass converter.'
 			return desc
 		end,
-		MaxHealthMod = 0.45,
+		MaxHealthMod = 1.9,
 	},
 	['Fighter Dreadnought'] = {
 		IsAvailable = function(id)
@@ -288,7 +288,7 @@ PrestigeClass = {
 			local desc = 'An Dreadnought is a strong combat class. ..............'
 			return desc
 		end,
-		MaxHealthMod = 0.60,
+		MaxHealthMod = 2.8,
 	},
 	['Fighter Ranger'] = {
 		IsAvailable = function(id)
@@ -312,7 +312,7 @@ PrestigeClass = {
 			local desc = 'A Fighter Ranger is a good self-sufficient offensive class ....'
 			return desc
 		end,
-		MaxHealthMod = 0.45,
+		MaxHealthMod = 1.9,
 	},
 	[ 'Rogue Ranger'] = {
 		IsAvailable = function(id)
@@ -336,7 +336,7 @@ PrestigeClass = {
 			local desc = 'A Rogue Ranger is a fast self-sufficient harassing class ....'
 			return desc
 		end,
-		MaxHealthMod = 0.38,
+		MaxHealthMod = 1.5,
 	},
 	Elite = {
 		IsAvailable = function(id)
@@ -406,7 +406,7 @@ PrestigeClass = {
 			local desc = 'The Rogue Bard is a jack all trades class. His chants can buff the eco, heal units, damage/speed/regen boost...... '
 			return desc
 		end,
-		MaxHealthMod = 0.35,
+		MaxHealthMod = 1.3,
 	},
 	['Ardent Bard'] = {
 		IsAvailable = function(id)
@@ -430,7 +430,7 @@ PrestigeClass = {
 			local desc = 'The Ardent Bard is a support class with a strong dread disonnance power. His chants can buff the eco, heal units, damage/speed/regen boost...... '
 			return desc
 		end,
-		MaxHealthMod = 0.35,
+		MaxHealthMod = 1.3,
 	},
 	['Support Restorer'] = {
 		IsAvailable = function(id)
@@ -458,7 +458,7 @@ PrestigeClass = {
 			local desc = 'The Restorer is a support Class. It mainly restoreS shields and health at very high efficiency. He got a huge energy storage. On the combat side, the Restorer got the longest stun of all classes.'
 			return desc
 		end,
-		MaxHealthMod = 1,
+		MaxHealthMod = 3.5,
 	},
 }
 
@@ -467,13 +467,13 @@ OnPromoteGlobal = function(id)
 	local unit = GetUnitById(id)
 	local BaseClass = DM.GetProperty(id,'BaseClass','Fighter')
 	local bp = unit:GetBlueprint()	
-	if table.find(bp.Categories,'COMMAND') then else
-		-- Dynamic Range feature
-		unit.RangeFromHillBonusThread = unit:ForkThread(unit.RangeFromHillBonus)
-		-- Dynamic data update
-		unit.UpdateActivityThread = unit:ForkThread(unit.UpdateActivity)
-	end
-		-- Storage feature
+	-- Dynamic Range feature
+	unit.RangeFromHillBonusThread = unit:ForkThread(unit.RangeFromHillBonus)
+	-- Dynamic data update
+	unit.UpdateActivityThread = unit:ForkThread(unit.UpdateActivity)
+	-- Capacitors update
+	unit.UpdateCapacitorsThread = unit:ForkThread(unit.UpdateCapacitors)
+	-- Storage feature
 	if BaseClass == 'Support' then
 		DM.IncProperty(id, 'Restoration', 70)
 		if not DM.GetProperty('Global'..unit:GetArmy(), 'EnergyStorage') then
@@ -481,8 +481,8 @@ OnPromoteGlobal = function(id)
 		end
 		local Power = math.ceil(math.pow(bp.Economy.BuildCostMass, 0.9))
 		local CurrentStorage = DM.GetProperty('Global'..unit:GetArmy(), 'EnergyStorage')
-		unit:GetAIBrain():GiveStorage('Energy', CurrentStorage + Power * 2000)
-		DM.SetProperty('Global'..unit:GetArmy(), 'EnergyStorage', CurrentStorage + Power * 2000)
+		unit:GetAIBrain():GiveStorage('Energy', CurrentStorage + Power * 200)
+		DM.SetProperty('Global'..unit:GetArmy(), 'EnergyStorage', CurrentStorage + Power * 200)
 		DM.IncProperty(id, 'Dexterity', -10)
 		DM.IncProperty(id, 'Hull', 5)
 		DM.IncProperty(id, 'Energy', 5)

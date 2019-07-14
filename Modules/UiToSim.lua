@@ -14,6 +14,7 @@ end
 function SetBuildingSpeed(Unit)
 	DM.SetProperty(Unit.id,'SetBuildingSpeed', Unit.BuildingRate)
 	DM.SetProperty(Unit.id,'UpdateUnit',1)
+	
 end
 
 function EcoEvent(Unit)
@@ -53,9 +54,7 @@ end
 function CallPower(Unit)
 	local power = CF.GetUnitPower(Unit.id, Unit.PowerName)
 	local lunit = GetUnitById(Unit.id)
-	if DM.GetProperty(Unit.id, 'Capacitor') > power.GetPowerCost(lunit) then
-		lunit.ExecutePower(lunit, Unit.PowerName, Unit.Choice)
-	end
+	lunit.ExecutePower(lunit, Unit.PowerName, Unit.Choice)
 end
 
 function SetAutoCast(Unit)
@@ -140,35 +139,51 @@ function ApplyTemplate(Unit)
 end
 
 function UpdateDataTechs(data)
+	local PreviousTech = {}
 	if data.Techs then
 		local unit = GetUnitById(data.Unitid)
+		local Army = unit:GetArmy()
+		local Brain = GetArmyBrain(Army)
+		local Global = 'Global'..Army
 		for tech, level in data.Techs do
-			DM.SetProperty('Global'..unit:GetArmy(), 'LandMobileTech'..tech, level)
+			if DM.GetProperty(Global, 'Tech'..tech) then
+				PreviousTech[tech] = DM.GetProperty(Global, 'Tech'..tech, 0)
+			end
+			DM.SetProperty(Global, 'Tech'..tech, level)
 		end
-		if not DM.GetProperty('Global'..unit:GetArmy(), 'LandMobileXPSpentPoints') then 
-			DM.SetProperty('Global'..unit:GetArmy(), 'LandMobileXPSpentPoints', data.TechPoints)
+		if not DM.GetProperty(Global, 'TechSpentPoints') then 
+			DM.SetProperty(Global, 'TechSpentPoints', data.TechPoints)
 		else
-			DM.IncProperty('Global'..unit:GetArmy(), 'LandMobileXPSpentPoints', data.TechPoints)
+			DM.IncProperty(Global, 'TechSpentPoints', data.TechPoints)
 		end
-		local HeroesList = CF.GetPlayerHeroesList(GetArmyBrain(data.Player))
-		for _,Hero in HeroesList do
-			local bp = Hero:GetBlueprint()
-			if table.find(bp.Categories, 'LAND') and table.find(bp.Categories, 'MOBILE') then
-				if table.find(bp.Categories, 'EXPERIMENTAL') then
-				else
-					for tech, _ in LandTech do
-						if DM.GetProperty('Global'..data.Player, 'LandMobileTech'..tech) then	
-							local level = DM.GetProperty('Global'..data.Player, 'LandMobileTech'..tech)
-							if LandTech[tech].OnStopBeingBuilt then
-								LandTech[tech].OnStopBeingBuilt(unit, level) -- Executing Tech tree node script
-							end
-							if LandTech[tech].OnCreate then
-								LandTech[tech].OnCreate(unit, level) -- Executing Tech tree node script
-							end
-						end
-					end
+		local AllUnits = Brain:GetListOfUnits(categories.SELECTABLE, false, true)
+		for _,unit in AllUnits do
+			for tech, level in  data.Techs do
+				if unit and LandTech[tech].InstantUpgrade then
+					LandTech[tech].InstantUpgrade(unit, level, PreviousTech[tech] or 0)
 				end
 			end
 		end
+		Brain:TakeResource('Mass', data.Masstospend)
+		-- local HeroesList = CF.GetPlayerHeroesList(GetArmyBrain(data.Player))
+		-- for _,Hero in HeroesList do
+			-- local bp = Hero:GetBlueprint()
+			-- if table.find(bp.Categories, 'LAND') and table.find(bp.Categories, 'MOBILE') then
+				-- if table.find(bp.Categories, 'EXPERIMENTAL') then
+				-- else
+					-- for tech, _ in LandTech do
+						-- if DM.GetProperty('Global'..data.Player, 'Tech'..tech) then	
+							-- local level = DM.GetProperty('Global'..data.Player, 'Tech'..tech)
+							-- if LandTech[tech].OnStopBeingBuilt then
+								-- LandTech[tech].OnStopBeingBuilt(unit, level) -- Executing Tech tree node script
+							-- end
+							-- if LandTech[tech].OnCreate then
+								-- LandTech[tech].OnCreate(unit, level) -- Executing Tech tree node script
+							-- end
+						-- end
+					-- end
+				-- end
+			-- end
+		-- end
 	end
 end

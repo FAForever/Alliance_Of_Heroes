@@ -21,7 +21,7 @@ function IsAvailable(unit) -- Mandatory function
 end
 
 function Description(unit) -- Mandatory function
-	local Tp = {} Tp.Line = {} Tp.Width = 350
+	local Tp = {} Tp.Line = {} Tp.Width = 300
 	table.insert(Tp.Line, {Name(unit)})
 	table.insert(Tp.Line, {'AOE : 10', Color.GREY_LIGHT})
 	table.insert(Tp.Line, {'Add your engineers buildrate to the factory', Color.GREY_LIGHT})
@@ -41,6 +41,7 @@ function GetPowerCost(unit) -- Mandatory function
 end
 
 function OnCast(unit, TempEntity, Option) -- Mandatory function. This function is called from ui immediately when the power icon is clicked on
+	LOG('Casted')
 	unit:ExecuteConsolidation()
 end
 

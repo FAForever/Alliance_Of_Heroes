@@ -1,11 +1,11 @@
 name = "Alliance Of Heroes PRE-ALPHA"
-version = 170
+version = 171
 copyright = "Please ask for authorization before using part of the code or modify the mod. Send me private message on FAF forums."
-description = "Convert some units as Heroes and fight AI Elite units. Upgrade your heroes with the tech tree and the training center. Use your heroes powers, weapons and armors. Increase their level of veterancy. Recommended settings : (500 units, 1 AIx) (to fix any desync issue : Use downlord client & Update it to the last version. Then refaf & Reinstall your mods)."
+description = "RPG mod, extended veterancy, custom armors and weapons upgrades, a full redesigned tech tree applied to all units. Any feedback on FAF forums/mods/Alliance of Heroes. Have fun !"
 author = "Franck83"
 icon = "/mods/Alliance_Of_Heroes/mod_icon.png"
 url = "http://forums.faforever.com/viewtopic.php?f=41&t=14919&sid=a1596b331acfbe87dd8e9f34af2a3e87"
-uid = "14A9EAB2-E851-78DB-A1F3-270"
+uid = "14A9EAB2-E851-78DB-A1F3-271"
 selectable = true
 enabled = true
 exclusive = false
@@ -16,6 +16,20 @@ conflicts   = {
 }
 
 -- This is an Exclusive Forged Alliance Forever Mod for the Chris Taylor's Supreme Commander Forged Alliance Game.
+
+-- Version 171
+-- [Feature] complete tech tree rework. Techs apply to all units. Need a Research Center to unlock techs.
+-- [Feature] Multi units promoting
+-- [Feature] Multi units orders and stance switching
+-- [Feature] Multi units training
+-- [Feature] Multi units template applying
+-- [Improvement] x10 capacitors responsiveness tick
+-- [Improvement] x10 powers responsiveness tick
+-- [Improvement] better weapons ui damage tool tips
+-- [Fixed] Wrong capacitor test on some powers calls
+-- [Fixed] Some ACU promotion locked even if it should cost no logistics
+-- [Fixed] Aeon ACU Heatsink rate of fire fixed
+-- [Fixed] Hero shield that was 2x strong
 
 -- Version 170
 -- To enforce client mod update
@@ -72,7 +86,7 @@ conflicts   = {
 -- Beam problem fixed
 
 -- Version 151
--- Anti-air wapon added to all ACUs
+-- Anti-air weapon added to all ACUs
 
 -- Version 150
 -- AI Elite units Balance

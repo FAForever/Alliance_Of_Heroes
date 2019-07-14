@@ -25,7 +25,7 @@ function Description(unit) -- Mandatory function
 	local PowerModifier = CF.GetStanceModifier(unit, 'PowerStrengh_Mod') + (AoHBuff.GetBuffValue(unit, 'PowerDamage', 'ALL') / 100)
 	local Power = math.floor(math.pow(bp.Economy.BuildCostMass, 0.5) * PowerModifier * (1.5 + Rangercraft/100 + Int/100))
 	local Healthrec = math.ceil(Power)
-	local Tp = {} Tp.Line = {} Tp.Width = 220 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 180 Tp.OffSetY = -70
 	table.insert(Tp.Line, {'Energy Nano Repair'})
 	table.insert(Tp.Line, {'Personal Health Recovery Buff', Color.WHITE})
 	table.insert(Tp.Line, {'+ '..Healthrec..' health regen', Color.AEON})

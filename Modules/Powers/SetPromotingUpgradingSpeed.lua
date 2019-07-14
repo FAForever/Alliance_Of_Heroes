@@ -18,7 +18,7 @@ end
 
 function Description(unit) -- Mandatory function
 	local id = unit:GetEntityId()
-	local Tp = {} Tp.Line = {} Tp.Width = 340 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 340 Tp.OffSetY = -70
 	local APColor = Color.GREY_LIGHT
 	local CurrentSpeed = DM.GetProperty(id,'PromotingUpgradingSpeed', 'Average')
 	local PromotingUpgradingSpeed = {'Faster','Fast','Average','Slow','Pause' }

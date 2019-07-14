@@ -40,7 +40,7 @@ function Description(unit) -- Mandatory function
 		end
 	end
 	
-	local Tp = {} Tp.Line = {} Tp.Width = 290 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 290 Tp.OffSetY = -70
 	local Techlevel = CF.GetUnitTech(unit)
 	table.insert(Tp.Line, {'Repair units'})
 	table.insert(Tp.Line, {'Repair all mobile self & allies units up to tech '..Techlevel, Color.WHITE})

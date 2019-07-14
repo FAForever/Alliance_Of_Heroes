@@ -19,7 +19,7 @@ end
 
 function Description(unit) -- Mandatory function
 	local id = unit:GetEntityId()
-	local Tp = {} Tp.Line = {} Tp.Width = 420 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 420 Tp.OffSetY = -70
 	local APColor = Color.GREY_LIGHT
 	local Behaviour = DM.GetProperty(id, 'Behaviour', 'Standing')
 	local BehaviourList = {'Auto Move', 'Aggressive','Normal','Defensive','Standing'}

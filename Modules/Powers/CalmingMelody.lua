@@ -29,7 +29,7 @@ function Description(unit) -- Mandatory function
 	local PowerCapacitorRecoveryBuff = math.min(math.ceil(Power), 60)
 	local Specialization = ''
 	local SpecializationBonus = math.ceil(PowerCapacitorRecoveryBuff * 1.5)
-	local Tp = {} Tp.Line = {} Tp.Width = 370 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 320 Tp.OffSetY = -70
 	table.insert(Tp.Line, {'Calming Melody'})
 	table.insert(Tp.Line, {'AOE (20) Power Capacitor Recovery Melody Chant' , Color.WHITE})
 	table.insert(Tp.Line, {'..Personal :', Color.GREY_LIGHT})

@@ -25,10 +25,10 @@ function Description(unit) -- Mandatory function
 	local PowerModifier = CF.GetStanceModifier(unit, 'PowerStrengh_Mod') + (AoHBuff.GetBuffValue(unit, 'PowerDamage', 'ALL') / 100)
 	local Power = math.floor(70 * PowerModifier * (1 + Rangercraft/100 + Int/100))
 	local Attack = Power
-	local Tp = {} Tp.Line = {} Tp.Width = 220 Tp.OffSetY = -35
+	local Tp = {} Tp.Line = {} Tp.Width = 180 Tp.OffSetY = -70
 	table.insert(Tp.Line, {'Aiming Expertise'})
 	table.insert(Tp.Line, {'Personal attack buff', Color.WHITE})
-	table.insert(Tp.Line, {'+ '..Attack..' attack rating', Color.AEON})
+	table.insert(Tp.Line, {'+ '..Attack..' accuracy', Color.AEON})
 	table.insert(Tp.Line, {''})
 	table.insert(Tp.Line, {'Duration : 360 s', Color.AQUA})
 	table.insert(Tp.Line, {'ReCast time : 360 s', Color.AQUA})
