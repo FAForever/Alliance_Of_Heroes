@@ -472,8 +472,8 @@ function GetUnitRegen(unit)
 	local level = GetUnitLevel(unit)
 	local TechLevel = GetUnitTech(unit) or 1
 	local army = unit:GetArmy()
-	local HallofFameBonusRegen = Calculate_HallofFameBonus(DM.GetProperty(army, 'AI_'..'Support'..'_'..GetUnitLayerTypeHero(unit), 0), 'Support') * TechLevel
-	local Regen = (DM.GetProperty(id, 'Hull') / 25) * TechLevel * (level - 1) + DM.GetProperty(id,'Upgrade_Armor_Regeneration Increase', 0) + HallofFameBonusRegen
+	-- local HallofFameBonusRegen = Calculate_HallofFameBonus(DM.GetProperty(army, 'AI_'..'Support'..'_'..GetUnitLayerTypeHero(unit), 0), 'Support') * TechLevel
+	local Regen = (DM.GetProperty(id, 'Hull') / 25) * TechLevel * (level - 1) * 0.3 + DM.GetProperty(id,'Upgrade_Armor_Regeneration Increase', 0)
 	return Regen
 end
 

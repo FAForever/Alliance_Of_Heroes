@@ -27,7 +27,7 @@ Shield = Class(OldShield, Entity) {
 			if Tech_Shield_RegenRate > 0 then spec.ShieldRegenRate = spec.ShieldRegenRate + Tech_Shield_RegenRate end
 		end
 		-- LOG(spec.ShieldMaxHealth)
-		self.OldOnCreate(self, spec)
+		Shield.OldOnCreate(self, spec)
 	end,
 
 	OldOnDamage = Shield.OnDamage,
@@ -99,39 +99,7 @@ Shield = Class(OldShield, Entity) {
 			ShieldAbs =  ShieldAbs + (DM.GetProperty(id, 'Upgrade_Armor_Shield Absorb '..ModWc, 0)) / 100
 		end
 		AmountMod = AmountMod / ShieldAbs
-		self.OldOnDamage(self, instigator, AmountMod, vector, ProjectileId)
+		Shield.OldOnDamage(self, instigator, AmountMod, vector, ProjectileId)
     end,
 
-}
-
-OldPersonalBubble = PersonalBubble
-PersonalBubble = Class(OldPersonalBubble) {
-	OldOnCreate = PersonalBubble.OnCreate,
-	OnCreate = function(self, spec)
-        self.OldOnCreate(self, spec)
-
-        -- Store off useful values from the blueprint
-        local OwnerBp = self.Owner:GetBlueprint()
-
-        self.SizeX = OwnerBp.SizeX
-        self.SizeY = OwnerBp.SizeY
-        self.SizeZ = OwnerBp.SizeZ
-
-        self.ShieldSize = spec.ShieldSize
-
-        -- Manually disable the bubble shield's collision sphere after its creation so it acts like the new personal shields
-        self:SetCollisionShape('None')
-        self:SetType('Personal')
-	end,
-}
-
-
-OldPersonalShield = PersonalShield
-PersonalShield = Class(OldPersonalShield) {
-	OldOnCreate = PersonalShield.OnCreate,
-    OnCreate = function(self, spec)
-		-- AOH Custom shield data
-		-- modding specs
-		self.OldOnCreate(self, spec)
-    end,
 }

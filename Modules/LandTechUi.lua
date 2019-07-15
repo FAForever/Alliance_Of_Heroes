@@ -282,10 +282,9 @@ Modifiers = {
 		Description = function(id, Level)
 			local ShieldPower = (Level) * 15
 			local Title = 'Improved Shield Power'
-			local Body = 'Currently inactivated for bug fixing'
+			local Body = 'Click to Upgrade'
 			if Level > 0 then
-				-- Body = '+'..ShieldPower..' % to all shields power.'
-				Body = 'Currently inactivated for bug fixing'
+				Body = '+'..ShieldPower..' % to all shields power.'
 			end
 			return Title, Body
 		end,
@@ -299,7 +298,7 @@ Modifiers = {
 			return true
 		end,
 		GetMaxLevel = function(id)
-			return 0
+			return 8
 		end,
 		GetMassCost = function(id, Level)
 			return 400 * Level
@@ -313,12 +312,12 @@ Modifiers = {
 	},
 	['Improved Shield Regen'] = {
 		Description = function(id, Level)
-			local ShieldRegen = (Level) * 8
+			local ShieldRegen = (Level) * 12
 			local Title = 'Improved Shield Regen'
-			local Body = 'Currently inactivated for bug fixing'
+			local Body = 'Click to Upgrade'
 			if Level > 0 then
-				-- Body = '+'..ShieldRegen..' to all shields regen.'
-				Body = 'Currently inactivated for bug fixing'
+				Body = '+'..ShieldRegen..' to all shields regen.'
+				-- Body = 'Currently inactivated for bug fixing'
 			end
 			return Title, Body
 		end,
@@ -332,7 +331,7 @@ Modifiers = {
 			return true
 		end,
 		GetMaxLevel = function(id)
-			return 0
+			return 8
 		end,
 		GetMassCost = function(id, Level)
 			return 400 * Level
