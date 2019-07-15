@@ -42,7 +42,7 @@ UnitBlueprint {
         MaxHealth = 2500,
         RegenRate = 5,
     },
-    Description = '<LOC xsc1301_desc>Seraphim Research Center',
+    Description = 'Seraphim Research Center',
     Display = {
         AnimationDeath = {
             {
@@ -139,7 +139,7 @@ UnitBlueprint {
         UnitWeight = 1,
     },
     Interface = {
-        HelpText = '<LOC xsc1301_help>Seraphim Research Center',
+        HelpText = 'Seraphim Research Center',
     },
     LifeBarHeight = 0.075,
     LifeBarOffset = 1.3,

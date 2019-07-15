@@ -248,21 +248,27 @@ Unit = Class(OldUnit) {
 					local Difficulty = ScenarioInfo.Options.Difficulty or 1
 					local roll = math.ceil(math.random(Difficulty, 7))
 					local Rank = {'Ensign', 'Lieutenant *', 'Captain **', 'Commander ***', 'Commodore ****', 'Vice-Admiral *****', 'Admiral ******'}
-					DM.SetProperty(id, 'Upgrade_Armor_Health Increase', roll * 50000)
-					DM.SetProperty(id, 'Upgrade_Armor_Regeneration Increase', roll * 50)
-					DM.SetProperty(id, 'Upgrade_Armor_Heavy Armor', roll * 40)
 					DM.SetProperty(id, 'AI_Champion', Rank[roll])
-					if table.find(bp.Categories, 'CYBRAN') then
-						DM.SetProperty(id, 'Upgrade_Weapon_2_Armor Piercing', roll * 25)
-						DM.SetProperty(id, 'Upgrade_Weapon_2_Damage to All Units', roll*75)
-						DM.SetProperty(id, 'Upgrade_Weapon_2_Range', 35 + roll)
-						DM.SetProperty(id, 'Upgrade_Weapon_3_Range', 35 + roll)
-					else
-						DM.SetProperty(id, 'Upgrade_Weapon_1_Armor Piercing', roll * 25)
-						DM.SetProperty(id, 'Upgrade_Weapon_1_Damage to All Units', roll*75)
-						DM.SetProperty(id, 'Upgrade_Weapon_1_Range', 35 + roll)
-						DM.SetProperty(id, 'Upgrade_Weapon_2_Range', 35 + roll)			
-					end
+					BuffBlueprint {
+						Name = 'AIACU',
+						DisplayName = 'AIACU',
+						BuffType = 'AIACU',
+						Stacks = 'REPLACE',
+						Duration = -1,
+						Affects = {
+							Damage = {
+								Add = roll * 200,
+							},
+							MaxHealth = {
+								DoNoFill = false,
+								Add = roll * 50000,
+							},
+							Regen = {
+								Add = roll * 50,
+							},
+						},
+					}
+					Buff.ApplyBuff(Unit, 'AIACU')
 				end
 				-- AI BOSS units
 				local TechLevel = CF.GetUnitTech(Unit)
@@ -272,6 +278,7 @@ Unit = Class(OldUnit) {
 						if table.find(bp.Categories, 'DEFENSE') or table.find(bp.Categories, 'MOBILE') or table.find(bp.Categories, 'ANTIAIR') then 
 							local Time = GetGameTimeSeconds()
 							if Time > 900 then
+								local Multp = math.random(1, Time/300)
 								local AIRmodifier = 1
 								local NAVALmodifier = 1
 								if table.find(bp.Categories, 'HIGHALTAIR') or table.find(bp.Categories, 'AIR')  then
@@ -280,21 +287,7 @@ Unit = Class(OldUnit) {
 								if table.find(bp.Categories, 'NAVAL') then
 									NAVALmodifier = 0.5
 								end
-								local MassIncome = 0
-								local MassIncomeAI = 0
-								local TotalHumanPlayers = 0
-								for i, brain in ArmyBrains do
-									if brain.BrainType == 'Human' then
-										TotalHumanPlayers = TotalHumanPlayers + 1
-										MassIncome = MassIncome + brain:GetEconomyIncome('MASS')
-									else	
-										MassIncomeAI = MassIncomeAI + brain:GetEconomyIncome('MASS')
-									end
-								end
 								local TimeMod = Time / 2
-								MassIncomeAI = math.max(MassIncomeAI, 1)
-								MassIncome = math.max(MassIncome, 1)
-								local EcoRatio = math.max(MassIncome / MassIncomeAI, 4)
 								BuffBlueprint {
 									Name = 'AIBoss',
 									DisplayName = 'AIBoss',
@@ -304,17 +297,17 @@ Unit = Class(OldUnit) {
 									Affects = {
 										RateOfFire = {
 											Add = 0,
-											Mult = 0.25 / math.max(EcoRatio, 1),
+											Mult = 0.50,
 										},
 										Damage = {
-											Add = TimeMod / 20 * AIRmodifier * NAVALmodifier,
+											Add = (Multp * 5 + TimeMod / 20) * AIRmodifier * NAVALmodifier,
 										},
 										MaxHealth = {
 											DoNoFill = false,
-											Add = ((Time - 900) * 20 * TechLevel) * AIRmodifier * NAVALmodifier,
+											Add = ((Time - 900) * 5 * TechLevel) * AIRmodifier * NAVALmodifier,
 										},
 										Regen = {
-											Add = TimeMod / 50 * AIRmodifier * NAVALmodifier,
+											Add = Multp * 5 + TimeMod / 50 * AIRmodifier * NAVALmodifier,
 										},
 										MoveMult = {
 											Mult = 0.66,
@@ -322,8 +315,107 @@ Unit = Class(OldUnit) {
 									},
 								}
 								Buff.ApplyBuff(Unit, 'AIBoss')
-								local Level = math.max(math.ceil(EcoRatio + (Time-900) / 600, 1))
+								local Level = math.max(math.min(math.ceil(Multp + (Time-900) / 600), 35), 1)
 								local Name = 'Elite rank '
+								Unit:SetCustomName(Name..Level)
+								DM.SetProperty(id, 'Type', 'Elite')
+								DM.SetProperty(id, 'EliteLevel', Level)
+							end
+						end
+					end
+				end
+				if math.random(1, 100) > (100 - math.min(Time/300, 5))  and TechLevel > 2 and aiBrain.BrainType != 'Human' and CF.IsMilitary(Unit) then
+					if table.find(bp.Categories, 'INDIRECTFIRE') then else
+						if table.find(bp.Categories, 'DEFENSE') or table.find(bp.Categories, 'MOBILE') or table.find(bp.Categories, 'ANTIAIR') then 
+							local Time = GetGameTimeSeconds()
+							if Time > 1800 then
+								local Multp = math.random(1, Time/300)
+								local AIRmodifier = 1
+								local NAVALmodifier = 1
+								if table.find(bp.Categories, 'HIGHALTAIR') or table.find(bp.Categories, 'AIR')  then
+									AIRmodifier = 0.25
+								end
+								if table.find(bp.Categories, 'NAVAL') then
+									NAVALmodifier = 0.5
+								end
+								local TimeMod = Time / 2
+								BuffBlueprint {
+									Name = 'AIBoss',
+									DisplayName = 'AIBoss',
+									BuffType = 'Boss',
+									Stacks = 'REPLACE',
+									Duration = -1,
+									Affects = {
+										RateOfFire = {
+											Add = 0,
+											Mult = 0.125,
+										},
+										MaxHealth = {
+											DoNoFill = false,
+											Add = ((Time - 900) * 2 * TechLevel) * AIRmodifier * NAVALmodifier,
+										},
+										Regen = {
+											Add = Multp * TimeMod / 50 * AIRmodifier * NAVALmodifier,
+										},
+										MoveMult = {
+											Mult = 1.75,
+										},
+									},
+								}
+								Buff.ApplyBuff(Unit, 'AIBoss')
+								local Level = math.max(math.min(math.ceil(Multp + (Time-1800) / 600), 35), 1)
+								local Name = 'Assassin rank '
+								Unit:SetCustomName(Name..Level)
+								DM.SetProperty(id, 'Type', 'Elite')
+								DM.SetProperty(id, 'EliteLevel', Level)
+							end
+						end
+					end
+				end
+				if math.random(1, 100) > (100 - math.min(Time/300, 3))  and TechLevel > 2 and aiBrain.BrainType != 'Human' and CF.IsMilitary(Unit) then
+					if table.find(bp.Categories, 'INDIRECTFIRE') then else
+						if table.find(bp.Categories, 'DEFENSE') or table.find(bp.Categories, 'MOBILE') or table.find(bp.Categories, 'ANTIAIR') then 
+							local Time = GetGameTimeSeconds()
+							if Time > 1800 then
+								local Multp = math.random(1, Time/300)
+								local AIRmodifier = 1
+								local NAVALmodifier = 1
+								if table.find(bp.Categories, 'HIGHALTAIR') or table.find(bp.Categories, 'AIR')  then
+									AIRmodifier = 0.25
+								end
+								if table.find(bp.Categories, 'NAVAL') then
+									NAVALmodifier = 0.5
+								end
+								local TimeMod = Time / 2
+								BuffBlueprint {
+									Name = 'AIBoss',
+									DisplayName = 'AIBoss',
+									BuffType = 'Boss',
+									Stacks = 'REPLACE',
+									Duration = -1,
+									Affects = {
+										RateOfFire = {
+											Add = 0,
+											Mult = 0.25,
+										},
+										Damage = {
+											Add = (Multp * 50 + TimeMod / 50) * AIRmodifier * NAVALmodifier,
+										},
+										MaxHealth = {
+											DoNoFill = false,
+											Add = ((Time - 900) * 10 * TechLevel) * AIRmodifier * NAVALmodifier,
+										},
+										Regen = {
+											Add = TimeMod / 15 * AIRmodifier * NAVALmodifier,
+										},
+										MoveMult = {
+											Mult = 0.50,
+										},
+									},
+								}
+								Buff.ApplyBuff(Unit, 'AIBoss')
+								local Level = math.max(math.min(math.ceil(Multp + (Time-1800) / 600), 35), 1)
+								local Name = 'Warlord rank '
 								Unit:SetCustomName(Name..Level)
 								DM.SetProperty(id, 'Type', 'Elite')
 								DM.SetProperty(id, 'EliteLevel', Level)
@@ -988,15 +1080,10 @@ Unit = Class(OldUnit) {
 				-- local GuardsBirth = DM.GetProperty(id, 'Guards_Casted', 0)
 				if table.find(bp.Categories, 'COMMAND') and aiBrain.BrainType != 'Human' then
 					local Time =  math.min(GetGameTimeSeconds(), 7000)
-					DM.SetProperty(id, 'Upgrade_Armor_Health Increase', 5000 * (1 + Time/500))
-					DM.SetProperty(id, 'Upgrade_Armor_Regeneration Increase', Time/50)
-					if table.find(bp.Categories, 'CYBRAN') then
-						DM.SetProperty(id, 'Upgrade_Weapon_2_Armor Piercing', 25)
-						DM.SetProperty(id, 'Upgrade_Weapon_2_Damage to All Units', 25 * (1 + Time/1000))
-					else
-						DM.SetProperty(id, 'Upgrade_Weapon_1_Armor Piercing', 50)
-						DM.SetProperty(id, 'Upgrade_Weapon_1_Damage to All Units', 25 * (1 + Time/1000))
-					end
+					
+					
+					
+					
 				end
 				-- if table.find(bp.Categories, 'COMMAND') and (self:GetHealth() / self:GetMaxHealth()) < 0.40 and aiBrain.BrainType != 'Human' and DifficultyMod[AIDiff] >= 3  and (GetGameTimeSeconds() - GuardsBirth) > (60 - DifficultyMod[AIDiff] * 8)  and GetGameTimeSeconds() > 240 then
 					-- self:SetWeaponEnabledByLabel('ColdBeam', true)
