@@ -185,8 +185,10 @@ Modifiers = {
 			if bp.Defense.Shield.ShieldMaxHealth then
 				_ShieldMaxHealth = bp.Defense.Shield.ShieldMaxHealth + bp.Defense.Shield.ShieldMaxHealth * Level * 0.15
 				DM.SetProperty(id, 'Tech_Shield_MaxHealth', bp.Defense.Shield.ShieldMaxHealth * Level * 0.15)
-				self.MyShield:SetMaxHealth(_ShieldMaxHealth)
-				self.MyShield:AdjustHealth(self, bp.Defense.Shield.ShieldMaxHealth * Level * 0.15) 
+				if self.MyShield then
+					self.MyShield:SetMaxHealth(_ShieldMaxHealth)
+					self.MyShield:AdjustHealth(self, bp.Defense.Shield.ShieldMaxHealth * Level * 0.15)
+				end	
 			end
 			if self.MyShield and DM.GetProperty(id,'PrestigeClassPromoted') == 1 then
 				_ShieldMaxHealth = _ShieldMaxHealth + LesserShield.GetShieldPower(self, true)
@@ -211,7 +213,9 @@ Modifiers = {
 			if bp.Defense.Shield.ShieldRegenRate then
 				ShieldRegenRate = bp.Defense.Shield.ShieldRegenRate + Level * 8
 				DM.SetProperty(id, 'Tech_Shield_RegenRate', Level * 8)
-				self.MyShield:SetShieldRegenRate(ShieldRegenRate)
+				if self.MyShield then
+					self.MyShield:SetShieldRegenRate(ShieldRegenRate)
+				end	
 			end
 			if self.MyShield and DM.GetProperty(id,'PrestigeClassPromoted') == 1 then
 				DM.SetProperty(id, 'Tech_Shield_RegenRate', Level * 8)

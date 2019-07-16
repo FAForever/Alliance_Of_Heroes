@@ -106,7 +106,7 @@ function OnCast(unit, TempEntity, Option) -- Mandatory function. This function i
 		DM.SetProperty(id, 'EffectTime_'..Name(unit), 1) -- this is a flag informing that the power is on (may be useful for further add of an active icon on units flagged)
 		unit.KillPowerThread = unit:ForkThread(KillPower, GetDuration(unit), Name(unit))
 	end
-	unit:UpdateUnitData(5)
+	unit:UpdateUnitData(2)
 	DM.IncProperty(id, 'Capacitor', - GetPowerCost(unit))
 end
 

@@ -1,11 +1,11 @@
 name = "Alliance Of Heroes PRE-ALPHA"
-version = 177
+version = 178
 copyright = "Please ask for authorization before using part of the code or modify the mod. Send me private message on FAF forums."
 description = "RPG mod, extended veterancy, custom armors and weapons upgrades, a full redesigned tech tree applied to all units. Any feedback on FAF forums/mods/Alliance of Heroes. Have fun !"
 author = "Franck83"
 icon = "/mods/Alliance_Of_Heroes/mod_icon.png"
 url = "http://forums.faforever.com/viewtopic.php?f=41&t=14919&sid=a1596b331acfbe87dd8e9f34af2a3e87"
-uid = "14A9EAB2-E851-78DB-A1F3-277"
+uid = "14A9EAB2-E851-78DB-A1F3-278"
 selectable = true
 enabled = true
 exclusive = false
@@ -17,7 +17,7 @@ conflicts   = {
 
 -- This is an Exclusive Forged Alliance Forever Mod for the Chris Taylor's Supreme Commander Forged Alliance Game.
 
--- version 172-7
+-- version 172-8
 -- [Added] Assassins & Warlords
 -- [Fixed] Elite units infinite level 
 -- [Inactivated] Critical bug about 2 powers that need fixing.
