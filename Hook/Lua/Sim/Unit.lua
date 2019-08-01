@@ -715,7 +715,7 @@ Unit = Class(OldUnit) {
 		table.insert(aiBrain.HeroesList, self)
 		local army = self:GetArmy()
 		local ArmyBrain = GetArmyBrain(army)
-		DM.SetProperty('Global'..army, 'Logistics', CF.GetLogisticAvailable(ArmyBrain))
+		DM.SetProperty('Global'..army, 'Logistics', CF.GetLogisticAvailable(ArmyBrain, self))
 		-- LOG('Heroes Number : '..table.getn(aiBrain.HeroesList))
 		repeat
 			if DM.GetProperty(id,'EcoEventProgress_'..'Promoting', 0) >= 1000 then
@@ -1199,7 +1199,10 @@ Unit = Class(OldUnit) {
 						local RofEnh = 0
 						local RofBuff = AoHBuff.GetBuffValue(self, 'RateOfFire', 'ALL') / 100
 						local RofTech = DM.GetProperty(id, 'Tech_Rate Of Fire', 0)
-						if self:HasEnhancement('HeatSink') or self:HasEnhancement('HeavyAntiMatterCannon') or  self:HasEnhancement('CoolingUpgrade') or self:HasEnhancement('RateOfFire') then RofEnh = 1 end -- ACU range enh compatibility 
+						if self:HasEnhancement('HeatSink') or self:HasEnhancement('HeavyAntiMatterCannon') or  self:HasEnhancement('CoolingUpgrade') or self:HasEnhancement('RateOfFire') then RofEnh = 1 end -- ACU rof enh compatibility 
+						if self:HasEnhancement('PhasonBeamAir') then
+							if table.find(bp.Categories, 'CYBRAN') or table.find(bp.Categories, 'SERAPHIM') then RofEnh = 1 end
+						end
 						Weap:ChangeRateOfFire((bpwp.RateOfFire * ((1 + RofTech + RofBuff + ROfUp + RofEnh) * RofStance)))
 					end
 				end
@@ -1445,7 +1448,7 @@ Unit = Class(OldUnit) {
 			-- Refreshing Logistics
 			local army = self:GetArmy()
 			local ArmyBrain = GetArmyBrain(self:GetArmy())
-			DM.SetProperty('Global'..army, 'Logistics', CF.GetLogisticAvailable(ArmyBrain))
+			DM.SetProperty('Global'..army, 'Logistics', CF.GetLogisticAvailable(ArmyBrain, self))
 		end
 		Unit.OldOnKilled(self, instigator, type, overkillRatio)
 	end,
@@ -1457,7 +1460,7 @@ Unit = Class(OldUnit) {
 		if DM.GetProperty(idk,'PrestigeClassPromoted', nil) == 1 then -- Refreshing logistics
 			local army = self:GetArmy()
 			local ArmyBrain = GetArmyBrain(self:GetArmy())
-			DM.SetProperty('Global'..army, 'Logistics', CF.GetLogisticAvailable(ArmyBrain))
+			DM.SetProperty('Global'..army, 'Logistics', CF.GetLogisticAvailable(ArmyBrain, self))
 			DM.RemoveId(idk)
 		end
 		Unit.OldDestroyUnit(self, overkillRatio)
@@ -1544,7 +1547,7 @@ Unit = Class(OldUnit) {
 		if Promoted == true then
 			local ArmyBrain = GetArmyBrain(self:GetArmy())
 			-- LOG('Heroes table '..repr(CF.SortDualHeroList()))
-			DM.SetProperty('Global'..army, 'Logistics', CF.GetLogisticAvailable(ArmyBrain))
+			DM.SetProperty('Global'..army, 'Logistics', CF.GetLogisticAvailable(ArmyBrain, self))
 		end
 	
 		if XP then 	

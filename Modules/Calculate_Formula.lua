@@ -69,7 +69,10 @@ end
 
 function GetLogisticAvailable(ArmyBrain)
 	local HeroesList = GetPlayerHeroesList(ArmyBrain)
-	local Logistics = 100
+	local Logistics = 10
+	local ArmyIndex = ArmyBrain:GetArmyIndex()
+	local Logistics_Tech = DM.GetProperty('Global'..ArmyIndex, 'Logistics_Tech', 0)
+	Logistics = Logistics + Logistics_Tech
 	for j, hero in HeroesList do
 		Logistics = Logistics - GetLogisticCost(hero)
 	end
@@ -82,13 +85,13 @@ function GetLogisticCost(unit)
 	local Tech = GetUnitTech(unit)
 	local LogisticCostMod = 2
 	if table.find(bp.Categories, 'STRUCTURE') then LogisticCostMod = 1 end
-	if level >= 10 then LogisticCostMod = 0.5 end
-	if level >= 20 then LogisticCostMod = 0 end
-	if level >= 30 then LogisticCostMod = -0.5 * Tech end
-	if level >= 40 then LogisticCostMod = -1 * Tech end
-	if level >= 50 then LogisticCostMod = -1.5 * Tech end
-	if level >= 60 then LogisticCostMod = -2 * Tech end
-	if level >= 70 then LogisticCostMod = -2.5 * Tech end
+	if level >= 10 then LogisticCostMod = 0.75 end
+	if level >= 20 then LogisticCostMod = 0.5 end
+	if level >= 30 then LogisticCostMod = 0.25 * Tech end
+	if level >= 40 then LogisticCostMod = 0 * Tech end
+	if level >= 50 then LogisticCostMod = 0.25 * Tech end
+	if level >= 60 then LogisticCostMod = 0.5 * Tech end
+	if level >= 70 then LogisticCostMod = 0.75 * Tech end
 	if table.find(bp.Categories, 'COMMAND') then LogisticCostMod = 0 end
 	return math.ceil(math.pow(bp.Economy.BuildCostMass / 10, 0.6))
 end

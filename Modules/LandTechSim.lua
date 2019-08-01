@@ -11,6 +11,11 @@ local CF = import(ModPath..'Modules/Calculate_Formula.lua')
 local LesserShield = import(ModPath..'Modules/Powers/LesserShield.lua')
 
 Modifiers = {
+	['Improved Logistics'] = {
+		InstantUpgrade = function(self, Level, PreviousLevel)
+			DM.SetProperty('Global'..self:GetArmy(), 'Logistics_Tech', Level * 25)
+		end,
+	},	
 	['Improved Hull Building'] = {
 		InstantUpgrade = function(self, Level, PreviousLevel)
 			local bp = self:GetBlueprint()

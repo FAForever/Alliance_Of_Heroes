@@ -1654,7 +1654,7 @@ function CreateUnitUi()
 							local _TemplateName = UmUi['TemplateSlot_'..TemplateSlot.Slot].TemplateName
 							DialogScreen.Template = ''
 							local unit = GetSelectedUnits()
-							if (DM.GetProperty('Global'..unit[1]:GetArmy(), 'Logistics', 0) - CF.GetUnitTech(unit[1]) >= 0) or table.find(bp.Categories, 'COMMAND') then
+							if (DM.GetProperty('Global'..unit[1]:GetArmy(), 'Logistics', 0) - CF.GetLogisticCost(unit[1]) >= 0) or table.find(bp.Categories, 'COMMAND') then
 								local _id = unit[1]:GetEntityId()
 								local bp = unit[1]:GetBlueprint()
 								local UnitLevel, UnitLevelP =  CF.GetUnitLevel(unit[1])
@@ -1919,7 +1919,7 @@ function RefreshLogistic(id)
 		EnhTtipTimer = 0
 		LastTooltipTarget = 'LogisticsUi'
 		local Tp = {} Tp.Line = {} Tp.Width = 240 Tp.OffSetX = 180 Tp.OffSetY = 40
-		table.insert(Tp.Line, {'Level Up your Heroes to generate Logistics'})
+		table.insert(Tp.Line, {'Build a Research Center and train logistics'})
 		SetEnhancedTooltip(UmUi['Logistic'], Tp, '', '')
 	end
 end
@@ -2543,7 +2543,7 @@ end
 function RefreshPromotion(id)
 	local unit = GetSelectedUnits()
 	local PromoteList = CF.GetAvailablePromoteList(id)
-	if DM.GetProperty('Global'..unit[1]:GetArmy(), 'Logistics', 0) - CF.GetUnitTech(unit[1]) >= 0 then
+	if (DM.GetProperty('Global'..unit[1]:GetArmy(), 'Logistics', 0) - CF.GetLogisticCost(unit[1])) >= 0 then
 		local len = table.getn(PromoteList)
 		for i = 1, len do
 			UmUi['TextBox_' .. i]:SetText(PromoteList[i])

@@ -1,6 +1,6 @@
 function Unit_MainUi_Loop_entry()
 	-- Create Unit Ui
-	WaitSeconds(3)
+	WaitSeconds(5)
 	import('/mods/Alliance_Of_Heroes/Modules/Unit_MainUi.lua').CreateUnitUi()
 	repeat
 		import('/mods/Alliance_Of_Heroes/Modules/Unit_MainUi.lua').TickShow()

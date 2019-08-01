@@ -42,6 +42,11 @@ Generic = {
 			else
 				LayoutHelpers.AtLeftIn(UiText, UiObject, 4)
 			end
+			if Modifiers[NodeName].GetMaxLevel(id) >= 99 then
+				LayoutHelpers.AtLeftIn(UiText, UiObject, -3)
+			else
+				LayoutHelpers.AtLeftIn(UiText, UiObject, 4)
+			end
 		end
 		UiText:SetText(UiObject.Level..' / '..MaxLevel)
 		if UiObject.Upgradable == true then
@@ -54,6 +59,38 @@ Generic = {
 }
 
 Modifiers = {
+	['Improved Logistics'] = {
+		Description = function(id, Level)
+			local Logistics = (Level) * 25
+			local Title = 'Increase logistics'
+			local Body = 'Click to Upgrade'
+			if Level > 0 then
+				Body = '+'..Logistics..' logistics'
+			end
+			return Title, Body
+		end,
+		CreateNode = function(id, UiObject, Level)
+			return Generic.CreateNode(id, UiObject, Level, 435, -269, 'Improved Logistics')
+		end,
+		UpdateNode = function(id, UiObject, UiText, UiUp, Level)
+			return  Generic.UpdateNode(id, UiObject, UiText, UiUp, Level, Modifiers['Improved Logistics'].GetMaxLevel(id), 'Improved Logistics')
+		end,
+		IsAvailable = function(id)
+			return true
+		end,
+		GetMaxLevel = function(id)
+			return 100
+		end,
+		GetMassCost = function(id, Level)
+			return 400 * Level
+		end,
+		CanTechUp = function(id, Level, ProjetedNodeLevel, SpentPoints, TechPointsAvailable)
+			return (Level <  Modifiers['Improved Logistics'].GetMaxLevel(id))
+		end,
+		CanTechDown = function(id, Level, ProjetedNodeLevel, MinimumLevel)
+			return (Level > MinimumLevel and Level > 0) 
+		end,
+	},
 	['Improved Hull Building'] = {
 		Description = function(id, Level)
 			local Healthpercent = (Level) * 25

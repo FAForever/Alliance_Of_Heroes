@@ -34,6 +34,7 @@ AIBrain = Class(OldAIBrain) {
 		self.HeroesList = {}
 		if HeroesThread == false then 
 			-- self:ForkThread(self.RefreshingHeroList)
+			self:ForkThread(self.RefreshingLogistics)
 			HeroesThread = true
 		end
     end,
@@ -47,9 +48,20 @@ AIBrain = Class(OldAIBrain) {
 		self.HeroesList = {}
 		if HeroesThread == false then 
 			-- self:ForkThread(self.RefreshingHeroList)
+			self:ForkThread(self.RefreshingLogistics)
 			HeroesThread = true
 		end
     end,
+	
+	RefreshingLogistics = function(self)
+		local ArmyIndex = self:GetArmyIndex()
+		repeat
+			local Logistics = CF.GetLogisticAvailable(self)
+			DM.SetProperty('Global'..ArmyIndex, 'Logistics', Logistics)
+			WaitSeconds(1)
+		until(self == nil)
+	end,
+	
 	
 	RefreshingHeroList = function(self) -- This Thread refreshes heroes list and rank every 10 s (removed feature since mod version 135)
 		-- repeat
